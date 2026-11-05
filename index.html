@@ -1,0 +1,4807 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>骰子酒馆 · M2</title>
+<style>
+:root{
+  --bg:#150e07; --panel:#2a1d10; --line:#5b421f;
+  --gold:#d9b25f; --gold2:#f0d68f; --ink:#efe2c4; --dim:#a8916b; --red:#c2402a; --green:#6f9e5c;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh; color:var(--ink); font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #3a2812 0%, transparent 60%),
+    radial-gradient(800px 400px at 10% 100%, #2a1c0d 0%, transparent 55%),
+    var(--bg);
+}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;
+  background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 1px,transparent 1px 3px);}
+#app{position:relative;max-width:1060px;margin:0 auto;padding:22px 18px 60px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px 14px;border-bottom:1px solid var(--line);margin-bottom:22px;flex-wrap:wrap}
+.crumbs{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex-wrap:wrap}
+.crumbs .crumb{padding:3px 9px;border:1px solid transparent;border-radius:999px}
+.crumbs .crumb.on{color:#1b1207;background:linear-gradient(#e8c877,#c39a45);font-weight:700}
+.crumbs .sep{opacity:.45}
+.topright{display:flex;align-items:center;gap:12px}
+.wallet{font-size:13px;color:var(--dim)}
+.wallet b{color:var(--gold2);font-variant-numeric:tabular-nums}
+.beerbtn{width:30px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid rgba(91,66,31,.75);border-radius:8px;background:rgba(0,0,0,.18);opacity:.62;cursor:pointer;transition:.15s;line-height:0}
+.beerbtn:hover{opacity:1;border-color:var(--gold);background:rgba(90,66,26,.45)}
+.beerbtn:active{transform:scale(.94)}
+.lucktag{font-size:11px;color:var(--dim);border:1px solid rgba(91,66,31,.75);border-radius:999px;padding:2px 8px;white-space:nowrap}
+.lucktag b{color:var(--gold2)}
+.toast{position:fixed;top:70px;right:18px;z-index:70;border:1px solid var(--gold);border-radius:12px;padding:11px 15px;background:linear-gradient(180deg,rgba(58,40,20,.98),rgba(28,18,9,.98));box-shadow:var(--shadow);max-width:270px;animation:toastin .22s ease}
+.toast.hidden{display:none}
+.toast{display:flex;align-items:center;gap:10px}
+.toast .tico{flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:rgba(240,214,143,.12);border:1px solid rgba(240,214,143,.38);box-shadow:0 0 0 1px rgba(0,0,0,.35) inset}
+.toast .tbody{min-width:0}
+.toast .t1{font-size:12px;color:var(--dim)}
+.toast .t2{margin-top:3px;font-size:17px;font-weight:800;color:var(--gold2);letter-spacing:.12em}
+.toast .t3{margin-top:3px;font-size:11px;color:var(--dim);line-height:1.5}
+@keyframes toastin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.screen{display:none;animation:fade .22s ease}
+.screen.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.hero{text-align:center;padding:8px 0 26px}
+.hero h1{margin:0;font-size:44px;letter-spacing:.16em;color:var(--gold2);text-shadow:0 2px 0 #3a2a12,0 10px 28px rgba(217,178,95,.18);font-weight:800}
+.hero p{margin:12px 0 0;color:var(--dim);font-size:14px;letter-spacing:.04em}
+.hero .stats{margin-top:14px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--dim)}
+.chip{border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:rgba(0,0,0,.18)}
+.chip b{color:var(--gold2)}
+.group{margin:0 0 22px}
+.group h2{font-size:13px;letter-spacing:.22em;color:var(--dim);margin:0 0 10px;font-weight:600}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(238px,1fr))}
+.card{
+  text-align:left;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:14px;
+  background:linear-gradient(180deg,#3a2814,#241808);cursor:pointer;position:relative;overflow:hidden;
+  transition:transform .15s,border-color .15s,box-shadow .15s;font:inherit;
+}
+.card:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:var(--shadow)}
+.card:disabled{opacity:.42;cursor:not-allowed;transform:none}
+.card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.card .who{font-size:18px;font-weight:700;color:var(--gold2)}
+.card .title{font-size:12px;color:var(--dim);margin-top:2px}
+.card .blurb{font-size:12px;color:var(--dim);margin-top:9px;line-height:1.5;min-height:2.9em}
+.card .row{display:flex;justify-content:space-between;align-items:center;margin-top:9px;font-size:12px;color:var(--dim);gap:8px;flex-wrap:wrap}
+.card .dicerow{font-size:11px;color:#c9b183;margin-top:8px;line-height:1.5}
+.card .title .approx{white-space:nowrap;color:#b99a6b;font-size:11px}
+.bet{color:var(--gold2);font-variant-numeric:tabular-nums;font-weight:700}
+.tag{border:1px solid #6b4c22;border-radius:999px;padding:2px 8px;font-size:11px;color:#e0c88f;background:rgba(0,0,0,.2)}
+.tag.t0{color:#d8d8d8;border-color:#7a7a7a}
+.tag.t1{color:#d9e2ea;border-color:#8b9aa8}
+.tag.t2{color:#f3d27a;border-color:#b9902f}
+.tag.none{color:#9b8d76;border-color:#5b421f}
+.dots{letter-spacing:2px;color:var(--gold)}
+.dots i{opacity:.22;font-style:normal}
+.dots i.on{opacity:1}
+.panel{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,rgba(58,40,20,.75),rgba(30,20,9,.85));padding:20px;box-shadow:var(--shadow)}
+.panel h2{margin:0 0 6px;font-size:20px;color:var(--gold2)}
+.panel .sub{color:var(--dim);font-size:13px;margin:0 0 16px;line-height:1.7}
+.choice{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.opt{border:1px solid var(--line);border-radius:12px;padding:16px;background:rgba(20,13,6,.55);cursor:pointer;color:var(--ink);font:inherit;text-align:left;transition:.15s}
+.opt:hover{border-color:var(--gold)}
+.opt.sel{border-color:var(--gold);background:rgba(90,66,26,.45);box-shadow:inset 0 0 0 1px rgba(217,178,95,.35)}
+.opt h3{margin:0 0 6px;font-size:16px;color:var(--gold2)}
+.opt p{margin:0;font-size:12px;color:var(--dim);line-height:1.6}
+.opt.locked{opacity:.55;cursor:not-allowed}
+.footerbar{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.btn{
+  font:inherit;font-size:14px;padding:10px 18px;border-radius:10px;border:1px solid var(--line);cursor:pointer;
+  background:linear-gradient(180deg,#4a3418,#2b1d0c);color:var(--ink);transition:.15s;
+}
+.btn:hover:not(:disabled){border-color:var(--gold);color:var(--gold2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:linear-gradient(180deg,#e9c97d,#bd9440);color:#21150a;border-color:#e8cf95;font-weight:800}
+.btn.primary:hover:not(:disabled){filter:brightness(1.07)}
+.btn.green{background:linear-gradient(180deg,#79a865,#4d7440);color:#12200c;border-color:#a9cf95;font-weight:700}
+.btn.ghost{background:transparent}
+.btn.small{font-size:12px;padding:6px 11px}
+.dicepick{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(196px,1fr))}
+.diecard{border:1px solid var(--line);border-radius:10px;padding:10px;background:linear-gradient(180deg,#33220f,#22160a);cursor:pointer;color:inherit;font:inherit;text-align:left;transition:.12s}
+.diecard:hover{border-color:var(--gold)}
+.diecard.sel{border-color:var(--gold2);box-shadow:0 0 0 1px var(--gold2) inset,0 6px 18px rgba(0,0,0,.35)}
+.diecard .nm{font-size:13px;font-weight:700;color:var(--gold2);line-height:1.35;min-height:2.6em}
+.diecard .px{font-size:11px;color:var(--dim);margin-top:4px;display:flex;justify-content:space-between;gap:6px}
+.bars{display:flex;gap:3px;align-items:flex-end;height:34px;margin-top:8px;padding-bottom:12px}
+.bars .b{flex:1;background:linear-gradient(180deg,#d9b25f,#7a5a25);border-radius:2px 2px 0 0;min-height:2px;position:relative}
+.bars .b.j{background:linear-gradient(180deg,#e08070,#a33b2c)}
+.bars .b span{position:absolute;bottom:-14px;left:0;right:0;text-align:center;font-size:9px;color:var(--dim)}
+.diecard .wild{color:#e08a78;font-size:11px;margin-top:2px;display:block;min-height:1.3em}
+.diecard .cnt{position:absolute;top:7px;right:8px;font-size:11px;font-weight:800;color:#21150a;background:linear-gradient(180deg,#e9c97d,#bd9440);border-radius:999px;padding:1px 7px}
+.diecard{position:relative}
+.diecard.capped{opacity:.5}
+.diecard .limit{position:absolute;top:7px;right:8px;font-size:10px;color:#c9b183;border:1px solid #6b4c22;border-radius:999px;padding:1px 6px}
+.diecard .cnt.left{left:8px;right:auto}
+.slots{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0 6px}
+.slot{position:relative;width:74px;height:58px;border-radius:10px;border:1px dashed #6b4c22;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--dim);background:rgba(0,0,0,.2);padding:3px;text-align:center;line-height:1.15}
+.slot.filled{border-style:solid;border-color:var(--gold);color:var(--gold2);font-size:10px;cursor:pointer}
+.slot.filled:hover{border-color:var(--red)}
+.slot .rm{position:absolute;top:-7px;right:-7px;width:17px;height:17px;border-radius:50%;background:#4a3418;border:1px solid var(--gold);color:var(--gold2);font-size:11px;line-height:15px;text-align:center;font-weight:700}
+.slot.filled:hover .rm{background:var(--red);color:#fff}
+.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;border-bottom:1px dashed var(--line);padding-bottom:12px;margin-bottom:0}
+.hud div{font-size:12px;color:var(--dim)}
+.hud b{display:block;font-size:22px;color:var(--gold2);margin-top:2px;font-variant-numeric:tabular-nums}
+.oppline{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--dim);border-bottom:1px solid rgba(91,66,31,.55);padding:10px 2px;flex-wrap:wrap}
+.oppline b{color:var(--gold2)}
+.dicearea{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;padding:26px 0 10px;min-height:130px}
+.lockedrow{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--dim);min-height:22px}
+.lockedrow .lk{border:1px solid #6b4c22;border-radius:6px;padding:1px 7px;color:#e0c88f}
+.lockedrow .lk i{font-style:normal;font-size:10px;opacity:.62;margin-left:5px}
+.lockedrow .lk b{color:var(--gold2)}
+.die{width:74px;height:74px;border-radius:14px;border:1px solid #efdca8;background:linear-gradient(155deg,#f7ecd0,#dcc69a);box-shadow:0 6px 12px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.7);cursor:pointer;transition:transform .13s,box-shadow .13s;position:relative;flex:0 0 auto;padding:0}
+.die:hover{transform:translateY(-3px)}
+.die.held{transform:translateY(-9px);box-shadow:0 10px 20px rgba(0,0,0,.5),0 0 0 3px var(--gold),inset 0 1px 0 rgba(255,255,255,.7)}
+.pips{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:8px 10px 17px;gap:2px;height:100%}
+.pip{width:12px;height:12px;border-radius:50%;background:#2b1a08;align-self:center;justify-self:center;box-shadow:inset -1px -1px 1px rgba(0,0,0,.5)}
+.die .devil{width:100%;height:100%;display:block;padding:7px 7px 16px}
+.dname{position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:8px;line-height:1;color:#5d411b;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px;opacity:.92;pointer-events:none}
+.turnline{text-align:center;padding:4px 0 0}
+.turnline .lab{font-size:12px;color:var(--dim);letter-spacing:.2em}
+.turnline .val{font-size:34px;color:var(--gold2);font-weight:800;font-variant-numeric:tabular-nums;line-height:1.15}
+.hint{text-align:center;font-size:13px;color:var(--dim);min-height:20px;margin:6px 0 14px}
+.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.badgebar{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:12px 0 0;min-height:34px}
+.badgebar .btn{font-size:12px;padding:7px 13px}
+.badgebar .btn.on{background:linear-gradient(180deg,#e9c97d,#bd9440);color:#21150a;border-color:#e8cf95;font-weight:800}
+.log{margin-top:20px;border-top:1px dashed var(--line);padding-top:12px;font-size:12px;color:var(--dim);line-height:1.85;max-height:150px;overflow:auto}
+.log div b{color:var(--gold2)}
+.overlay{position:fixed;inset:0;background:rgba(8,5,2,.72);display:flex;align-items:center;justify-content:center;z-index:40;padding:20px}
+.overlay.hidden{display:none}
+.result{width:min(460px,100%);border:1px solid var(--gold);border-radius:16px;background:linear-gradient(180deg,#f7ecd0,#e3cda2);color:#2a1c0b;padding:26px;box-shadow:var(--shadow);animation:pop .2s ease}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+.result h2{margin:0 0 8px;font-size:26px;color:#3b2a10}
+.result p{margin:0;font-size:14px;line-height:1.85}
+.result .footerbar{justify-content:flex-end}
+.modal{position:fixed;inset:0;background:rgba(8,5,2,.7);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modal.hidden{display:none}
+.modal .panel{width:min(560px,100%);max-height:82vh;overflow:auto;background:linear-gradient(180deg,#2f2110,#1c1209)}
+table.score{border-collapse:collapse;width:100%;font-size:13px}
+table.score td,table.score th{border-bottom:1px solid rgba(91,66,31,.6);padding:6px 8px;text-align:left}
+table.score th{color:var(--gold);font-weight:600;font-size:12px}
+.note{font-size:12px;color:var(--dim);line-height:1.7}
+@media (max-width:640px){
+  .hero h1{font-size:32px}
+  #app{padding:14px 12px 48px}
+  .hud b{font-size:18px}
+  .die{width:60px;height:60px}
+  .pips{padding:6px 8px 14px}
+  .pip{width:10px;height:10px}
+  .dname{font-size:7px;bottom:1px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="crumbs" id="crumbs"></div>
+    <div class="topright">
+      <span class="lucktag" id="luckState">🍺 清醒</span>
+      <div class="wallet">钱包 <b id="wallet">∞</b> 格罗申</div>
+      <button class="beerbtn" id="btnBeer" title="喝一口（幸运日：喝得越醉，用徽章越不容易被浪费）" aria-label="喝一口">
+        <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden="true">
+          <path d="M5 12.6h12.6v11.6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z" fill="#d8a24a" stroke="#6b4c22" stroke-width="1.2"/>
+          <path d="M17.6 16h3.1a3.1 3.1 0 0 1 0 6.2h-3.1" fill="none" stroke="#6b4c22" stroke-width="1.6"/>
+          <path d="M5 12.9c-.3-2 1.4-3.6 3.3-3.3.7-1.9 3.3-2.2 4.4-.5 2.1-.2 3.4 1.3 3.4 3.3z" fill="#f7ecd0" stroke="#6b4c22" stroke-width=".9"/>
+          <path d="M7.6 18.4h4.6M7.6 21.4h4.6" stroke="#f7ecd0" stroke-width="1" stroke-linecap="round" opacity=".55"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <section class="screen on" id="scr-npc">
+    <div class="hero">
+      <h1>骰子酒馆</h1>
+      <p>M2 · 6 位骰子玩家 · <span id="statDice">41</span> 颗真实骰子权重 · 按规则档先到 <span id="targetInHero">1500–8000</span> 分者胜</p>
+      <div class="stats">
+        <span class="chip">对手 <b id="statPlayers">6</b> 位（各自带骰）</span>
+        <span class="chip">徽章 <b>36</b> 件（3 档 × 13 子类）</span>
+        <span class="chip">金币 <b>无限</b>（调试期）</span>
+        <span class="chip">🍺 <b>幸运日</b>：右上角啤酒</span>
+      </div>
+    </div>
+    <div id="playerGrid"></div>
+    <div class="footerbar">
+      <button class="btn ghost" id="btnRules1">玩法与计分表</button>
+    </div>
+  </section>
+
+  <section class="screen" id="scr-mode">
+    <div class="panel">
+      <h2 id="modeTitle">规则</h2>
+      <p class="sub" id="modeSub"></p>
+      <div class="choice" id="modeChoice"></div>
+      <div class="footerbar">
+        <button class="btn ghost" data-back="npc">← 换个对手</button>
+        <button class="btn primary" id="btnModeNext" disabled>下一步：选徽章</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="scr-badge">
+    <div class="panel">
+      <h2>徽章</h2>
+      <p class="sub" id="badgeSub"></p>
+      <div class="choice" id="badgeChoice"></div>
+      <div class="footerbar">
+        <button class="btn ghost" data-back="mode">← 上一步</button>
+        <button class="btn primary" id="btnBadgeNext">下一步：选骰子</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="scr-dice">
+    <div class="panel">
+      <h2>挑骰子</h2>
+      <p class="sub">最多 6 颗，<b>同名骰子可以带多颗</b>（灌铅骰子除外，限 1 颗）；不足 6 颗自动用<b>普通骰子</b>补齐（每面 16.7%）。点卡片加一颗，点上方槽位去掉一颗。柱状图是该骰各面出现概率，<span style="color:#e08a78">红色柱</span>＝魔鬼头百搭面。</p>
+      <div class="slots" id="slots"></div>
+      <div class="footerbar" style="justify-content:flex-start;margin:6px 0 16px">
+        <button class="btn small" id="btnClearDice">清空</button>
+        <button class="btn small" id="btnRecommend">推荐一套</button>
+        <span class="note" id="diceCount"></span><span class="note" id="diceHint" style="color:#e6a08c"></span>
+      </div>
+      <div class="dicepick" id="dicePick"></div>
+      <div class="footerbar">
+        <button class="btn ghost" data-back="badge">← 上一步</button>
+        <button class="btn primary" id="btnStart">开 打</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="scr-game">
+    <div class="panel">
+      <div class="hud">
+        <div>目标<b id="hudTarget">4000</b></div>
+        <div>你<b id="hudYou">0</b></div>
+        <div>对手<b id="hudOpp">0</b></div>
+        <div>回合<b id="hudRound">1</b></div>
+      </div>
+      <div class="oppline"><span id="oppName"></span><span id="oppInfo"></span></div>
+      <div class="dicearea" id="diceArea"></div>
+      <div class="lockedrow" id="lockedRow"></div>
+      <div class="turnline"><div class="lab">本回合已锁定</div><div class="val" id="turnScore">0</div></div>
+      <div class="hint" id="hint"></div>
+      <div class="actions">
+        <button class="btn primary" id="btnRoll">掷骰</button>
+        <button class="btn green" id="btnBank" disabled>收分</button>
+      </div>
+      <div class="badgebar" id="badgeBar"></div>
+      <div class="actions" style="margin-top:10px">
+        <button class="btn small ghost" id="btnQuit">回主界面</button>
+        <button class="btn small ghost" id="btnRules3">规则</button>
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+  </section>
+</div>
+
+<div class="toast hidden" id="toast">
+  <div class="tico" id="toastIcon" aria-hidden="true">
+    <svg viewBox="0 0 34 34" width="26" height="26">
+      <path d="M4.5 16h10.5v9.6a3.5 3.5 0 0 1-3.5 3.5h-3.5A3.5 3.5 0 0 1 4.5 25.6z" fill="#d8a24a" stroke="#6b4c22" stroke-width="1.1"/>
+      <path d="M15 19.2h2.6a2.7 2.7 0 0 1 0 5.4H15" fill="none" stroke="#6b4c22" stroke-width="1.4"/>
+      <path d="M4.5 16.3c-.2-1.8 1.3-3.1 3-2.9.6-1.6 2.9-1.9 3.8-.4 1.8-.2 3 1.1 3 2.9z" fill="#f7ecd0" stroke="#6b4c22" stroke-width=".8"/>
+      <g transform="rotate(-18 25.5 8)">
+        <rect x="20.8" y="4.6" width="6.4" height="6.4" rx="1.5" fill="#f7ecd0" stroke="#6b4c22" stroke-width=".9"/>
+        <circle cx="22.8" cy="6.6" r=".7" fill="#2b1a08"/><circle cx="25.4" cy="9.2" r=".7" fill="#2b1a08"/><circle cx="22.8" cy="9.2" r=".7" fill="#2b1a08"/>
+      </g>
+      <g transform="rotate(16 30.4 13.4)">
+        <rect x="27.6" y="10.6" width="5.6" height="5.6" rx="1.4" fill="#e3cda2" stroke="#6b4c22" stroke-width=".9"/>
+        <circle cx="29.2" cy="12.2" r=".6" fill="#2b1a08"/><circle cx="31.2" cy="14.2" r=".6" fill="#2b1a08"/>
+      </g>
+      <path d="M24.4 3.1l.5-1.4M27.8 2.7l1-1" stroke="#f0d68f" stroke-width="1" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="tbody">
+    <div class="t1" id="toastL1"></div>
+    <div class="t2" id="toastL2"></div>
+    <div class="t3" id="toastL3"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="overlay">
+  <div class="result">
+    <h2 id="resTitle"></h2>
+    <p id="resBody"></p>
+    <div class="footerbar">
+      <button class="btn" id="btnAgain">再来一局</button>
+      <button class="btn primary" id="btnHome">回主界面</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="rulesModal">
+  <div class="panel">
+    <h2>玩法与计分表</h2>
+    <p class="sub">先到目标分者胜。每回合：掷骰 → 点选至少一颗得分骰 → 可「掷骰」继续掷剩下的，或「收分」结束本回合。掷出的骰子里一颗得分骰都没有＝爆点，本回合分归零。</p>
+    <table class="score">
+      <tr><th>组合</th><th>分值</th></tr>
+      <tr><td>单个 1</td><td>100</td></tr>
+      <tr><td>单个 5</td><td>50</td></tr>
+      <tr><td>三条 1</td><td>1000</td></tr>
+      <tr><td>三条 2–6</td><td>200 / 300 / 400 / 500 / 600</td></tr>
+      <tr><td>四条 / 五条 / 六条</td><td>三条分 × 2 / × 4 / × 8</td></tr>
+      <tr><td>小顺 1–5</td><td>500</td></tr>
+      <tr><td>小顺 2–6</td><td>750</td></tr>
+      <tr><td>全顺 1–6</td><td>1500</td></tr>
+      <tr><td>魔鬼头 / 小丑面</td><td>百搭，可当任意点数，自动取最高分组合</td></tr>
+    </table>
+    <p class="note" style="margin-top:14px"><b>🍺 幸运日</b>（KCD2 饮酒技能 8 级的同名 perk）：右上角啤酒按钮每喝一口，醉酒程度 +1（微醺 / 半醉 / 烂醉，最多 3）。效果是「使用徽章时有概率<b>不浪费次数</b>」，概率随醉酒程度升高、<b>上限 40%</b>：清醒 0% / 微醺 13% / 半醉 27% / 烂醉 40%，每次使用<b>独立判定</b>。真正生效时，右上角才会弹出带 perk 图标（啤酒杯与两颗骰子碰杯）的提示卡。<br>
+    <span style="color:#8d7a58">数据来源：<code>perk__kcd2.xml</code> 的 Lucky day（perk_id 3cdd51ee…）→ <code>buff__perk.xml</code> 的 <code>buff_params="bnc+0.4"</code>、<code>implementation="Cpp:AlcoholMood"</code>；官方文案「The more drunk you are, the higher chance you have of not wasting your badge」。</span></p>
+    <p class="note" style="margin-top:14px"><b>目标分</b>按对手规则档取自游戏数据 <code>rpg_param.xml</code> 的 <code>DiceGameTypeScore*</code>：乞丐 1500、车夫 2000、矿工/工匠/士兵 3000、学徒/牧师/侍臣 4000、骑士 5000、国王/皇帝 8000（农夫 2000、枢机主教 4000、领主 6000 三档表里没有键，取邻近值推断）。<br>
+    骰子权重来自 <code>item.xml</code>（1.5 版，41 条），14 档对手底注来自 <code>ScriptParams.xml</code>（表值 ×10 = 30…3000 格罗申）。</p>
+    <div class="footerbar"><button class="btn primary" id="btnCloseRules">知道了</button></div>
+  </div>
+</div>
+
+<script>
+/*
+ * badges.js —— 《天国：拯救 2》骰子徽章数据表（版本 1.5）
+ *
+ * 用途：index.html 用 <script src="badges.js"><\/script> 加载，之后读 window.BADGES。
+ * 结构：window.BADGES = { version, source, items: [...] }
+ * 每个 item：id / cn / en / tier / tierName / subtype / uses / price / effect / note
+ *
+ * effect.kind 只能取以下 13 种（引擎按 kind 派发，勿随意新增）：
+ *   startScore       开局领先分           amount = 领先分数
+ *   formation        解锁特殊组合         combos = [{ name, dice, score }]
+ *   nullify          抵消对手同档徽章     amount 固定 0，档位看 item.tier
+ *   tripleOnes       1+1+1 得分 ×amount
+ *   rerollAfterBust  爆点后再掷           amount = 1（再掷一次全部骰）
+ *   doubleLastScore  上次投掷得分 ×amount
+ *   turnMultiplier   本回合倍率           amount = 1.25 / 1.5 / 2
+ *   extraDie         额外加 amount 颗骰
+ *   rerollAny        可重掷任意骰         amount = 最多颗数
+ *   rerollSame       重掷同点数骰         amount = 最多颗数
+ *   setDie           把 1 颗骰改成 amount 点
+ *   boostSixes       三个 6 得分 ×amount
+ *   wildTo           把 1 颗骰改成百搭图案 amount = 改颗数（固定 1）
+ *
+ * selfCheck（2026-11-05）
+ *   条目数：36（id 唯一，无重复）
+ *   tier 分布：plumb 10 / silver 12 / gold 14
+ *   数据来源：
+ *     - Tables.pak → Libs/Tables/item/item.xml 的 <DiceBadge ...> 行（Type / SubType / Price）
+ *     - Localization/Chineses_xml.pak → Localization/text_ui_items.xml（英中物品名与描述）
+ *     - Localization/Chineses_xml.pak → Localization/text_ui_menus.xml
+ *       （ui_helpoverlay_dice3/4/5/6：每局可用次数与效果原文）
+ *   与报告 §3.4 的 35 条中英名清单对账：35 条全部覆盖，另加 1 条 DLC 金制命运徽章（Tyche）= 36。
+ *   36 条全部有官方中文名，无“（名称待核）”条目。
+ *   子类缺档（游戏里本来就没有这些档，不是漏数据）：
+ *     ExtraValue 仅金档；BoostSixes 仅金档；RerollPips 仅银 + 金（无锡档）。
+ *   id 冲突处理：
+ *     银档 SubType 7 有两件 → 普通件 badge_silver_extraDice，鸟王 badge_silver_extraBird；
+ *     金档 SubType 8 有两件 → 普通件 badge_gold_rerollDice，婚礼 badge_gold_wedding。
+ *   自检脚本：node prototype/badges-check.mjs（断言输出见文件末尾注释）。
+ */
+
+(function () {
+  "use strict";
+
+  window.BADGES = {
+    version: "1.5",
+    // 一句话来源：条目与价格来自 Tables.pak 的 item.xml，名称与次数来自本地化 pak。
+    source: "Tables.pak 条目 Libs/Tables/item/item.xml 的 DiceBadge 行（Type/SubType/Price）+ Localization/Chineses_xml.pak 的 text_ui_items.xml 与 text_ui_menus.xml（中英名、每局次数）",
+    items: [
+    {
+      id: "badge_plumb_headstart",
+      cn: "锡制先行徽章",
+      en: "Tin Headstart Badge",
+      tier: 0,
+      tierName: "锡制",
+      subtype: "headstart",
+      uses: 1,
+      price: 500,
+      effect: { kind: "startScore", amount: 250, combos: [], approx: true },
+      note: "开局即获得分数领先，不消耗次数（uses 记 1）。官方只说“小额的分数领先”，250 为社区估值。"
+    },
+
+    {
+      id: "badge_plumb_formations",
+      cn: "木匠的优势徽章",
+      en: "Carpenter's Advantage Badge",
+      tier: 0,
+      tierName: "锡制",
+      subtype: "formations",
+      uses: 1,
+      price: 1500,
+      effect: { kind: "formation", amount: 0, combos: [{ name: "切割", dice: [3, 5], score: 150 }], approx: true },
+      note: "解锁组合“切割”（3+5），可重复使用。分值官方未公布，150 为社区近似值。"
+    },
+
+    {
+      id: "badge_plumb_null",
+      cn: "锡制防守徽章",
+      en: "Tin Defence Badge",
+      tier: 0,
+      tierName: "锡制",
+      subtype: "null",
+      uses: 1,
+      price: 800,
+      effect: { kind: "nullify", amount: 0, combos: [], approx: false },
+      note: "抵消对手的锡制徽章效果；对手须同为锡档才能开打。每局 1 次。"
+    },
+
+    {
+      id: "badge_plumb_antibust",
+      cn: "锡制重掷徽章",
+      en: "Tin Resurrection Badge",
+      tier: 0,
+      tierName: "锡制",
+      subtype: "antibust",
+      uses: 1,
+      price: 1500,
+      effect: { kind: "rerollAfterBust", amount: 1, combos: [], approx: false },
+      note: "爆点（本次投掷无任何得分骰）后再掷一次；每局 1 次。"
+    },
+
+    {
+      id: "badge_plumb_doubleTake",
+      cn: "锡制镜像徽章",
+      en: "Tin Doppelganger Badge",
+      tier: 0,
+      tierName: "锡制",
+      subtype: "doubleTake",
+      uses: 1,
+      price: 1800,
+      effect: { kind: "doubleLastScore", amount: 2, combos: [], approx: false },
+      note: "上一次投掷的得分翻倍；每局 1 次。"
+    },
+
+    {
+      id: "badge_plumb_multiplier",
+      cn: "锡制军阀徽章",
+      en: "Tin Warlord Badge",
+      tier: 0,
+      tierName: "锡制",
+      subtype: "multiplier",
+      uses: 1,
+      price: 1100,
+      effect: { kind: "turnMultiplier", amount: 1.25, combos: [], approx: false },
+      note: "本回合得分 +25%；每局 1 次。"
+    },
+
+    {
+      id: "badge_plumb_extraDice",
+      cn: "锡制力量徽章",
+      en: "Tin Might Badge",
+      tier: 0,
+      tierName: "锡制",
+      subtype: "extraDice",
+      uses: 1,
+      price: 1500,
+      effect: { kind: "extraDie", amount: 1, combos: [], approx: false },
+      note: "本次投掷额外加 1 颗骰；每局 1 次。"
+    },
+
+    {
+      id: "badge_plumb_rerollDice",
+      cn: "锡制幸运女神徽章",
+      en: "Tin Fortune Badge",
+      tier: 0,
+      tierName: "锡制",
+      subtype: "rerollDice",
+      uses: 1,
+      price: 2700,
+      effect: { kind: "rerollAny", amount: 1, combos: [], approx: false },
+      note: "重掷最多 1 颗任意骰；每局 1 次。注：英文本写 once per game，中文本写“每局可使用2次”，此处取英文的 1。"
+    },
+
+    {
+      id: "badge_plumb_setDice",
+      cn: "锡制换点徽章",
+      en: "Tin Transmutation Badge",
+      tier: 0,
+      tierName: "锡制",
+      subtype: "setDice",
+      uses: 1,
+      price: 1500,
+      effect: { kind: "setDie", amount: 3, combos: [], approx: false },
+      note: "掷骰后把 1 颗骰改成 3 点；每局 1 次。"
+    },
+
+    {
+      id: "badge_plumb_balatro",
+      cn: "弄臣的铅制徽章",
+      en: "Tin Balatro's Badge",
+      tier: 0,
+      tierName: "锡制",
+      subtype: "balatro",
+      uses: 1,
+      price: 1500,
+      effect: { kind: "wildTo", amount: 1, combos: [], approx: false },
+      note: "把 1 颗骰变成百搭（joker）图案；每局 1 次。官方中文“铅制”是笔误，内部名 BalatroBadgePlumb，实属锡档。"
+    },
+
+    {
+      id: "badge_silver_headstart",
+      cn: "银制先行徽章",
+      en: "Silver Headstart Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "headstart",
+      uses: 1,
+      price: 2000,
+      effect: { kind: "startScore", amount: 500, combos: [], approx: true },
+      note: "开局即获得分数领先，不消耗次数（uses 记 1）。“中等”领先，500 为社区估值。"
+    },
+
+    {
+      id: "badge_silver_formations",
+      cn: "行刑者的优势徽章",
+      en: "Executioner's Advantage Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "formations",
+      uses: 1,
+      price: 2500,
+      effect: { kind: "formation", amount: 0, combos: [{ name: "绞架", dice: [4, 5, 6], score: 250 }], approx: true },
+      note: "解锁组合“绞架”（4,5,6），可重复使用。分值 250 为社区近似值。"
+    },
+
+    {
+      id: "badge_silver_null",
+      cn: "银制防守徽章",
+      en: "Silver Defence Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "null",
+      uses: 1,
+      price: 2000,
+      effect: { kind: "nullify", amount: 0, combos: [], approx: false },
+      note: "抵消对手的银制徽章效果；对手须同为银档。每局 1 次。"
+    },
+
+    {
+      id: "badge_silver_antibust",
+      cn: "银制重掷徽章",
+      en: "Silver Resurrection Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "antibust",
+      uses: 2,
+      price: 5000,
+      effect: { kind: "rerollAfterBust", amount: 1, combos: [], approx: false },
+      note: "爆点后再掷一次；每局 2 次。"
+    },
+
+    {
+      id: "badge_silver_doubleTake",
+      cn: "银制镜像徽章",
+      en: "Silver Doppelganger Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "doubleTake",
+      uses: 2,
+      price: 1900,
+      effect: { kind: "doubleLastScore", amount: 2, combos: [], approx: false },
+      note: "上一次投掷的得分翻倍；每局 2 次。"
+    },
+
+    {
+      id: "badge_silver_multiplier",
+      cn: "银制军阀徽章",
+      en: "Silver Warlord Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "multiplier",
+      uses: 1,
+      price: 2600,
+      effect: { kind: "turnMultiplier", amount: 1.5, combos: [], approx: false },
+      note: "本回合得分 +50%；每局 1 次。"
+    },
+
+    {
+      id: "badge_silver_extraDice",
+      cn: "银制力量徽章",
+      en: "Silver Might Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "extraDice",
+      uses: 2,
+      price: 2300,
+      effect: { kind: "extraDie", amount: 1, combos: [], approx: false },
+      note: "本次投掷额外加 1 颗骰；每局 2 次。"
+    },
+
+    {
+      id: "badge_silver_extraBird",
+      cn: "鸟王徽章",
+      en: "Bird King's Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "extraBird",
+      uses: 2,
+      price: 4000,
+      effect: { kind: "extraDie", amount: 1, combos: [], approx: false },
+      note: "清单外的独立徽章（银档）。额外加 1 颗骰；每局 2 次。"
+    },
+
+    {
+      id: "badge_silver_rerollDice",
+      cn: "银制幸运女神徽章",
+      en: "Silver Fortune Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "rerollDice",
+      uses: 1,
+      price: 2300,
+      effect: { kind: "rerollAny", amount: 2, combos: [], approx: false },
+      note: "重掷最多 2 颗任意骰；每局 1 次。"
+    },
+
+    {
+      id: "badge_silver_setDice",
+      cn: "银制换点徽章",
+      en: "Silver Transmutation Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "setDice",
+      uses: 1,
+      price: 2500,
+      effect: { kind: "setDie", amount: 5, combos: [], approx: false },
+      note: "掷骰后把 1 颗骰改成 5 点；每局 1 次。"
+    },
+
+    {
+      id: "badge_silver_rerollPips",
+      cn: "银制调换徽章",
+      en: "Silver Swap-out Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "rerollPips",
+      uses: 1,
+      price: 2100,
+      effect: { kind: "rerollSame", amount: 1, combos: [], approx: false },
+      note: "指定 1 颗骰重掷；每局 1 次。官方描述为“任意一枚自选骰”，引擎统一归入 rerollSame（金档才是“两颗同点数”）。"
+    },
+
+    {
+      id: "badge_silver_balatro",
+      cn: "弄臣的银制徽章",
+      en: "Silver Balatro's Badge",
+      tier: 1,
+      tierName: "银制",
+      subtype: "balatro",
+      uses: 2,
+      price: 1500,
+      effect: { kind: "wildTo", amount: 1, combos: [], approx: false },
+      note: "把 1 颗骰变成百搭图案；每局 2 次。"
+    },
+
+    {
+      id: "badge_gold_headstart",
+      cn: "金制先行徽章",
+      en: "Gold Headstart Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "headstart",
+      uses: 1,
+      price: 2900,
+      effect: { kind: "startScore", amount: 1000, combos: [], approx: true },
+      note: "开局即获得分数领先，不消耗次数（uses 记 1）。“大量”领先，1000 为社区估值。"
+    },
+
+    {
+      id: "badge_gold_formations",
+      cn: "教区牧师的优势徽章",
+      en: "Priest's Advantage Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "formations",
+      uses: 1,
+      price: 4000,
+      effect: { kind: "formation", amount: 0, combos: [{ name: "全视之眼", dice: [1, 3, 5], score: 300 }], approx: true },
+      note: "解锁组合“全视之眼”（1,3,5），可重复使用。分值 300 为社区近似值。"
+    },
+
+    {
+      id: "badge_gold_null",
+      cn: "金制防守徽章",
+      en: "Gold Defence Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "null",
+      uses: 1,
+      price: 3100,
+      effect: { kind: "nullify", amount: 0, combos: [], approx: false },
+      note: "抵消对手的金制徽章效果；对手须同为金档。每局 1 次。"
+    },
+
+    {
+      id: "badge_gold_extraValue",
+      cn: "金制君主徽章",
+      en: "Gold Emperor's Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "extraValue",
+      uses: 1,
+      price: 3900,
+      effect: { kind: "tripleOnes", amount: 3, combos: [], approx: false },
+      note: "1+1+1 组合的得分 ×3，可重复使用（常驻，不消耗次数，uses 记 1）。"
+    },
+
+    {
+      id: "badge_gold_antibust",
+      cn: "金制重掷徽章",
+      en: "Gold Resurrection Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "antibust",
+      uses: 3,
+      price: 3400,
+      effect: { kind: "rerollAfterBust", amount: 1, combos: [], approx: false },
+      note: "爆点后再掷一次；每局 3 次。"
+    },
+
+    {
+      id: "badge_gold_doubleTake",
+      cn: "金制镜像徽章",
+      en: "Gold Doppelganger Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "doubleTake",
+      uses: 3,
+      price: 3400,
+      effect: { kind: "doubleLastScore", amount: 2, combos: [], approx: false },
+      note: "上一次投掷的得分翻倍；每局 3 次。"
+    },
+
+    {
+      id: "badge_gold_multiplier",
+      cn: "金制军阀徽章",
+      en: "Gold Warlord Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "multiplier",
+      uses: 1,
+      price: 3200,
+      effect: { kind: "turnMultiplier", amount: 2, combos: [], approx: false },
+      note: "本回合得分翻倍（×2）；每局 1 次。"
+    },
+
+    {
+      id: "badge_gold_extraDice",
+      cn: "金制力量徽章",
+      en: "Gold Might Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "extraDice",
+      uses: 3,
+      price: 3900,
+      effect: { kind: "extraDie", amount: 1, combos: [], approx: false },
+      note: "本次投掷额外加 1 颗骰；每局 3 次。"
+    },
+
+    {
+      id: "badge_gold_wedding",
+      cn: "金制婚礼徽章",
+      en: "Gold Wedding Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "wedding",
+      uses: 1,
+      price: 5000,
+      effect: { kind: "rerollAny", amount: 3, combos: [], approx: false },
+      note: "清单外的独立徽章（金档，纪念 Agnes 与 Olda 婚礼）。重掷最多 3 颗骰；每局 1 次。"
+    },
+
+    {
+      id: "badge_gold_rerollDice",
+      cn: "金制幸运女神徽章",
+      en: "Gold Fortune Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "rerollDice",
+      uses: 1,
+      price: 3900,
+      effect: { kind: "rerollAny", amount: 3, combos: [], approx: false },
+      note: "重掷最多 3 颗任意骰；每局 1 次。"
+    },
+
+    {
+      id: "badge_gold_setDice",
+      cn: "金制换点徽章",
+      en: "Gold Transmutation Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "setDice",
+      uses: 1,
+      price: 4200,
+      effect: { kind: "setDie", amount: 1, combos: [], approx: false },
+      note: "掷骰后把 1 颗骰改成 1 点；每局 1 次。"
+    },
+
+    {
+      id: "badge_gold_rerollPips",
+      cn: "金制调换徽章",
+      en: "Gold Swap-out Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "rerollPips",
+      uses: 1,
+      price: 3800,
+      effect: { kind: "rerollSame", amount: 2, combos: [], approx: false },
+      note: "重掷 2 颗同点数的骰；每局 1 次。"
+    },
+
+    {
+      id: "badge_gold_boostSixes",
+      cn: "金制命运徽章",
+      en: "Gold Tyche Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "boostSixes",
+      uses: 1,
+      price: 4000,
+      effect: { kind: "boostSixes", amount: 2, combos: [], approx: false },
+      note: "6+6+6 组合的得分翻倍，可重复使用（常驻，uses 记 1）。DLC《匠心永铸》。"
+    },
+
+    {
+      id: "badge_gold_balatro",
+      cn: "弄臣的金制徽章",
+      en: "Gold Balatro's Badge",
+      tier: 2,
+      tierName: "金制",
+      subtype: "balatro",
+      uses: 3,
+      price: 1500,
+      effect: { kind: "wildTo", amount: 1, combos: [], approx: false },
+      note: "把 1 颗骰变成百搭图案；每局 3 次。"
+    }
+    ]
+  };
+})();
+
+/*
+ * 数据来源与不确定性
+ * ==================
+ *
+ * 一、游戏真值（可直接采信，来自 pak 内数据 / 官方本地化）
+ *   1. 条目集合、tier（Type 0/1/2）、子类（SubType 0..12）、价格（Price）：
+ *      Libs/Tables/item/item.xml 中的 <DiceBadge ...> 行。
+ *   2. 中英文名：Localization/text_ui_items.xml（ui_dicebadge_*_name 等键）。
+ *      36 条全部有官方中文名，没有任何一条是推断名。
+ *   3. uses（每局次数）与效果措辞：Localization/text_ui_menus.xml 的
+ *      ui_helpoverlay_dice3/4/5/6，例："Can be used twice per game." → uses: 2。
+ *   4. 属于硬数据的效果数值：
+ *      turnMultiplier 1.25 / 1.5 / 2；setDie 3 / 5 / 1；
+ *      rerollAny 1 / 2 / 3；extraDie 1；antibust 与 doubleTake 的 1 / 2 / 3；
+ *      wildTo 1（改 1 颗骰）；tripleOnes ×3；boostSixes ×2。
+ *
+ * 二、社区近似（effect.approx = true，需游戏内实测校正）
+ *   1. 先行徽章 startScore：官方只说 "small / moderate / large"，
+ *      amount 取 kcd2-dice-solver 的 250 / 500 / 1000（该仓库自标 UNVERIFIED）。
+ *   2. 三个阵型的 combos.score：官方未公布（见报告 §7 待核实第 4 条）。
+ *      取社区近似：切割 150、绞架 250、全视之眼 300
+ *      （kcd2-dice-solver src/data/badges.ts 的 DEFAULT_FORMATION_VALUES，
+ *       思路是“让原本死的骰子变得可用，但不额外给奖励分”）。
+ *
+ * 三、归类取舍（不是数值近似，是 kind 映射时的判断）
+ *   1. 调换徽章 RerollPips：锡/银官方描述是“重掷一枚自选骰”，金是“重掷两颗同点数骰”。
+ *      引擎只有 rerollSame 一个格子，锡/银也归 rerollSame（amount 1），
+ *      与 rerollAny 的差别（是否要求同点数）写在各条 note 里。
+ *   2. 君主（tripleOnes）、命运（boostSixes）、三个阵型都是“可重复使用 / 常驻”，
+ *      没有每局次数，uses 统一填 1 表示“不消耗次数”，note 里注明常驻。
+ *   3. 防守（nullify）：amount 填 0，档位由 item.tier 决定（引擎按同档抵消）。
+ *   4. 鸟王（subtype extraBird）与婚礼（subtype wedding）是清单外的独立徽章，
+ *      仍按真实价格与效果录入，不占 13 子类的位置。
+ *   5. 锡制幸运女神（rerollDice）：英文本 "once per game"，中文本“每局可使用2次”，
+ *      两版冲突；取 1（与银/金档同为 1 次，且以英文原文为准），note 已标注。
+ *   6. 弄臣的“铅制”（Tin Balatro's Badge）是官方中文笔误，内部名 BalatroBadgePlumb，
+ *      实际属锡制档；英文与内部名以锡制为准。
+ *   7. 报告 §3.3 写“RerollPips 仅锡/银”，与 pak 数据不符：
+ *      实际是银 + 金（无锡档），以本文件为准。
+ *
+ * 四、自检输出（2026-11-05 实跑 node prototype/badges-check.mjs，退出码 0）
+ *
+ *   ═══ BADGES-CHECK ═══
+ *   文件        : F:\kcd2-dice-feasibility\prototype\badges.js
+ *   version     : 1.5
+ *   条目数      : 36
+ *   tier 分布   : 锡 plumb 10 / 银 silver 12 / 金 gold 14
+ *   kind 覆盖   : 13/13 → startScore:3  formation:3  nullify:3  tripleOnes:1  rerollAfterBust:3  doubleLastScore:3  turnMultiplier:3  extraDie:4  rerollAny:4  rerollSame:2  setDie:3  boostSixes:1  wildTo:3
+ *   subtype 覆盖: 15 类（含 extraBird / wedding 两件清单外徽章）
+ *   价格合计    : 95300 格罗申（游戏真值，Price 字段直接求和）
+ *   approx=true : 6 条 → badge_plumb_headstart, badge_plumb_formations, badge_silver_headstart, badge_silver_formations, badge_gold_headstart, badge_gold_formations
+ *   断言        : 798 通过 / 0 失败
+ *   
+ *   结果: 全部通过 ✓  (node v24.21.0)
+ *
+ * 复核方式：node prototype/badges-check.mjs（798 条断言，0 失败）。
+ */
+
+</script>
+<script>
+// 自动生成，勿手改；来源见 research/extracted/t2/dice-weights-game.tsv（游戏 1.5 item.xml 提取）
+// 生成脚本：prototype/_gen-data.mjs
+window.KCD2_DATA = {
+ "version": "1.5",
+ "source": "Data/Tables.pak → Libs/Tables/item/item.xml（41 条 <Die> 的 SideValues/SideWeights）+ 官方中文文本；目标分取 Libs/Tables/rpg/rpg_param.xml 的 DiceGameTypeScore*",
+ "target": 4000,
+ "dice": [
+  {
+   "id": "dieUnbalanced",
+   "cn": "失衡骰子",
+   "en": "Ubalanced die",
+   "price": 100,
+   "icon": "die_b",
+   "desc": "有人试图用它作弊，但看来是玩脱了。",
+   "wild": false,
+   "weights": [
+    3,
+    4,
+    1,
+    1,
+    2,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 4,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    25,
+    33.3,
+    8.3,
+    8.3,
+    16.7,
+    8.3
+   ]
+  },
+  {
+   "id": "die_Matematikova",
+   "cn": "数学家的骰子",
+   "en": "Mathematician's die",
+   "price": 300,
+   "icon": "die_j",
+   "desc": "根据一位被遗忘的数学家的理论设计而成的骰子，可能更适合用来解方程而非赌骰子。",
+   "wild": false,
+   "weights": [
+    4,
+    5,
+    6,
+    7,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 4,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 5,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 7,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    16.7,
+    20.8,
+    25,
+    29.2,
+    4.2,
+    4.2
+   ]
+  },
+  {
+   "id": "dieSkull",
+   "cn": "雨果的骰子",
+   "en": "Hugo's die",
+   "price": 1000,
+   "icon": "dieSkull",
+   "desc": "“墙洞”酒馆里最忠实的常客用的骰子，上面刻着他的肖像。",
+   "wild": false,
+   "weights": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7
+   ]
+  },
+  {
+   "id": "dieLucky",
+   "cn": "幸运骰子",
+   "en": "Lucky die",
+   "price": 600,
+   "icon": "die_o",
+   "desc": "当好运降临时，回应以微笑，否则会看起来很可疑。",
+   "wild": false,
+   "weights": [
+    6,
+    1,
+    2,
+    3,
+    4,
+    6
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 4,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 6,
+     "wild": false
+    }
+   ],
+   "probs": [
+    27.3,
+    4.5,
+    9.1,
+    13.6,
+    18.2,
+    27.3
+   ]
+  },
+  {
+   "id": "die_Vozkova",
+   "cn": "战车御者的骰子",
+   "en": "Wagoner's die",
+   "price": 230,
+   "icon": "die_a",
+   "desc": "据说这颗骰子属于著名的罗马战车御者阿努尔杜斯，他能让对手疲劳，甚至酣然入睡。",
+   "wild": false,
+   "weights": [
+    1,
+    5,
+    6,
+    2,
+    2,
+    2
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 5,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 2,
+     "wild": false
+    }
+   ],
+   "probs": [
+    5.6,
+    27.8,
+    33.3,
+    11.1,
+    11.1,
+    11.1
+   ]
+  },
+  {
+   "id": "zachranaPtacka_die_sad_sergeant",
+   "cn": "悲伤格雷泽的骰子",
+   "en": "Sad Greaser's die",
+   "price": 450,
+   "icon": "die_r_devil",
+   "desc": "这颗蓝色的骰子映照出其主人内心的悲伤。",
+   "wild": false,
+   "weights": [
+    6,
+    6,
+    1,
+    1,
+    6,
+    3
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 3,
+     "wild": false
+    }
+   ],
+   "probs": [
+    26.1,
+    26.1,
+    4.3,
+    4.3,
+    26.1,
+    13
+   ]
+  },
+  {
+   "id": "die_Gamblerova_good",
+   "cn": "谨慎骗子的骰子",
+   "en": "Cautious cheater's die",
+   "price": 470,
+   "icon": "die_f",
+   "desc": "专业人士改造过的骰子，经过精准的调整，在外观上也几乎看不出来。",
+   "wild": false,
+   "weights": [
+    5,
+    3,
+    2,
+    3,
+    5,
+    3
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 5,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 5,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 3,
+     "wild": false
+    }
+   ],
+   "probs": [
+    23.8,
+    14.3,
+    9.5,
+    14.3,
+    23.8,
+    14.3
+   ]
+  },
+  {
+   "id": "die_Antiocha",
+   "cn": "圣安提阿克斯的骰子",
+   "en": "Saint Antiochus' die",
+   "price": 790,
+   "icon": "die_q",
+   "desc": "圣安提阿克斯的骰子总是投出3，不会出2，更不会出4。但有时会出6。",
+   "wild": false,
+   "weights": [
+    3,
+    1,
+    6,
+    1,
+    1,
+    3
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 3,
+     "wild": false
+    }
+   ],
+   "probs": [
+    20,
+    6.7,
+    40,
+    6.7,
+    6.7,
+    20
+   ]
+  },
+  {
+   "id": "dieEven",
+   "cn": "偶数骰子",
+   "en": "Even die",
+   "price": 660,
+   "icon": "die_i",
+   "desc": "一个做过手脚的骰子，更偏向于掷出偶数。",
+   "wild": false,
+   "weights": [
+    2,
+    8,
+    2,
+    8,
+    2,
+    8
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 8,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 8,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 8,
+     "wild": false
+    }
+   ],
+   "probs": [
+    6.7,
+    26.7,
+    6.7,
+    26.7,
+    6.7,
+    26.7
+   ]
+  },
+  {
+   "id": "dieTeeth_c",
+   "cn": "智齿骰子",
+   "en": "Wisdom tooth die",
+   "price": 50,
+   "icon": "dieTeeth_c",
+   "desc": "用智齿制成的骰子。",
+   "wild": false,
+   "weights": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7
+   ]
+  },
+  {
+   "id": "dieStripping",
+   "cn": "脱衣骰子",
+   "en": "Strip die",
+   "price": 670,
+   "icon": "die_o",
+   "desc": "据说这颗骰子能帮你脱去女人的衣服。",
+   "wild": false,
+   "weights": [
+    4,
+    2,
+    2,
+    2,
+    3,
+    3
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 4,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 3,
+     "wild": false
+    }
+   ],
+   "probs": [
+    25,
+    12.5,
+    12.5,
+    12.5,
+    18.8,
+    18.8
+   ]
+  },
+  {
+   "id": "dieOdd",
+   "cn": "奇数骰子",
+   "en": "Odd die",
+   "price": 500,
+   "icon": "die_k",
+   "desc": "一个做过手脚的骰子，更偏向于掷出奇数，大部分时候都能成功。",
+   "wild": false,
+   "weights": [
+    8,
+    2,
+    8,
+    2,
+    8,
+    2
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 8,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 8,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 8,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 2,
+     "wild": false
+    }
+   ],
+   "probs": [
+    26.7,
+    6.7,
+    26.7,
+    6.7,
+    26.7,
+    6.7
+   ]
+  },
+  {
+   "id": "dieHolyTrinity",
+   "cn": "圣三一骰子",
+   "en": "Holy trinity die",
+   "price": 450,
+   "icon": "die_g",
+   "desc": "一颗神圣的骰子，经常掷出三点，象征着三位一体。",
+   "wild": false,
+   "weights": [
+    4,
+    5,
+    7,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 4,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 5,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 7,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    21.1,
+    26.3,
+    36.8,
+    5.3,
+    5.3,
+    5.3
+   ]
+  },
+  {
+   "id": "dieTeeth_b",
+   "cn": "前臼齿骰子",
+   "en": "Premolar die",
+   "price": 50,
+   "icon": "dieTeeth_b",
+   "desc": "用前臼齿制成的骰子。",
+   "wild": false,
+   "weights": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7
+   ]
+  },
+  {
+   "id": "die_Kralova",
+   "cn": "国王骰子",
+   "en": "King's die",
+   "price": 910,
+   "icon": "die_q",
+   "desc": "国王总是正确，从来不会失败。不需要对骰子做任何手脚。",
+   "wild": false,
+   "weights": [
+    4,
+    6,
+    7,
+    8,
+    4,
+    3
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 4,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 7,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 8,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 4,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 3,
+     "wild": false
+    }
+   ],
+   "probs": [
+    12.5,
+    18.8,
+    21.9,
+    25,
+    12.5,
+    9.4
+   ]
+  },
+  {
+   "id": "dieAdversity",
+   "cn": "倒霉骰子",
+   "en": "Unlucky die",
+   "price": 140,
+   "icon": "die_c",
+   "desc": "幸运女神有时在你这边，有时不在，但如果有这颗骰子，那就永远不在。",
+   "wild": false,
+   "weights": [
+    1,
+    3,
+    2,
+    2,
+    2,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    9.1,
+    27.3,
+    18.2,
+    18.2,
+    18.2,
+    9.1
+   ]
+  },
+  {
+   "id": "dieNormal",
+   "cn": "普通骰子",
+   "en": "Ordinary die",
+   "price": 10,
+   "icon": "die_g",
+   "desc": "一个普通且平衡的骰子。",
+   "wild": false,
+   "weights": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7
+   ]
+  },
+  {
+   "id": "die_aranka",
+   "cn": "阿兰卡的骰子",
+   "en": "Aranka's die",
+   "price": 340,
+   "icon": "die_f",
+   "desc": "阿兰卡给了我这颗骰子，可以用来对付她的丈夫。",
+   "wild": false,
+   "weights": [
+    6,
+    1,
+    6,
+    1,
+    6,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    28.6,
+    4.8,
+    28.6,
+    4.8,
+    28.6,
+    4.8
+   ]
+  },
+  {
+   "id": "die_Tengri",
+   "cn": "腾格里的骰子",
+   "en": "Tengri’s die",
+   "price": 1,
+   "icon": "dieTeeth_a",
+   "desc": "我赢下腾格里的所有比赛之后，这东西就冒出来了。可以算是我大功告成的纪念品？",
+   "wild": true,
+   "weights": [
+    2,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 2,
+     "wild": true
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    28.6,
+    14.3,
+    14.3,
+    14.3,
+    14.3,
+    14.3
+   ]
+  },
+  {
+   "id": "die_Ci",
+   "cn": "恶二骰",
+   "en": "Ci die",
+   "price": 1120,
+   "icon": "die_r",
+   "desc": "恶魔骰中的第二颗，据说她经常迷失方向，但在与姐妹一起时，就会展现出可怕的力量。",
+   "wild": false,
+   "weights": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    6
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 6,
+     "wild": false
+    }
+   ],
+   "probs": [
+    14.3,
+    14.3,
+    14.3,
+    14.3,
+    14.3,
+    28.6
+   ]
+  },
+  {
+   "id": "die_Lu",
+   "cn": "恶一骰",
+   "en": "Lu die",
+   "price": 1120,
+   "icon": "die_r",
+   "desc": "恶魔骰中的第一颗。",
+   "wild": false,
+   "weights": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    6
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 6,
+     "wild": false
+    }
+   ],
+   "probs": [
+    14.3,
+    14.3,
+    14.3,
+    14.3,
+    14.3,
+    28.6
+   ]
+  },
+  {
+   "id": "zachranaPtacka_die_trojak",
+   "cn": "出三骰",
+   "en": "Triple die",
+   "price": 650,
+   "icon": "die_h",
+   "desc": "不知为何经常掷出3的骰子，所以究竟为什么？",
+   "wild": false,
+   "weights": [
+    2,
+    1,
+    4,
+    1,
+    2,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 4,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    18.2,
+    9.1,
+    36.4,
+    9.1,
+    18.2,
+    9.1
+   ]
+  },
+  {
+   "id": "problemovejParchant_pearlDice",
+   "cn": "粉色珍珠母骰子",
+   "en": "Mother-of-pearl die",
+   "price": 1200,
+   "icon": "problemovejParchant_pearlDice",
+   "desc": "一枚用粉色珍珠母制作的稀有骰子。传说其持有者会在赌局中获得幸运加持，但在感情上会遭遇不幸。",
+   "wild": false,
+   "weights": [
+    3,
+    1,
+    1,
+    1,
+    3,
+    3
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 3,
+     "wild": false
+    }
+   ],
+   "probs": [
+    25,
+    8.3,
+    8.3,
+    8.3,
+    25,
+    25
+   ]
+  },
+  {
+   "id": "dieKingdomCome",
+   "cn": "天国骰",
+   "en": "Heavenly Kingdom die",
+   "price": 1500,
+   "icon": "die_kcd",
+   "desc": "奇迹般的骰子，由天国降临到人间。",
+   "wild": false,
+   "weights": [
+    7,
+    2,
+    2,
+    2,
+    2,
+    4
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 7,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 4,
+     "wild": false
+    }
+   ],
+   "probs": [
+    36.8,
+    10.5,
+    10.5,
+    10.5,
+    10.5,
+    21.1
+   ]
+  },
+  {
+   "id": "zachranaPtacka_die_mud",
+   "cn": "坏骰子",
+   "en": "Grimy die",
+   "price": 230,
+   "icon": "die_c",
+   "desc": "刚出龙潭，又入虎穴，有时候还会让你被咬上几口。",
+   "wild": false,
+   "weights": [
+    1,
+    5,
+    1,
+    1,
+    7,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 5,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 7,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    6.3,
+    31.3,
+    6.3,
+    6.3,
+    43.8,
+    6.3
+   ]
+  },
+  {
+   "id": "die_Gamblerova_bad",
+   "cn": "蹩脚骰子",
+   "en": "Lousy gambler's die",
+   "price": 160,
+   "icon": "die_d",
+   "desc": "一枚劣质的作弊骰子，显而易见的重心不稳。",
+   "wild": false,
+   "weights": [
+    2,
+    3,
+    2,
+    3,
+    7,
+    3
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 7,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 3,
+     "wild": false
+    }
+   ],
+   "probs": [
+    10,
+    15,
+    10,
+    15,
+    35,
+    15
+   ]
+  },
+  {
+   "id": "zachranaPtacka_die_klobas",
+   "cn": "油腻骰子",
+   "en": "Greasy die",
+   "price": 150,
+   "icon": "die_l",
+   "desc": "比普通骰子更可靠，但不能太过依赖它。",
+   "wild": false,
+   "weights": [
+    3,
+    2,
+    3,
+    2,
+    3,
+    4
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 4,
+     "wild": false
+    }
+   ],
+   "probs": [
+    17.6,
+    11.8,
+    17.6,
+    11.8,
+    17.6,
+    23.5
+   ]
+  },
+  {
+   "id": "dieDevil",
+   "cn": "魔鬼骰子",
+   "en": "Devil's head die",
+   "price": 1600,
+   "icon": "die_q_devil",
+   "desc": "触感炽热的骰子，用魔鬼头像代替了1点的图案，人们可不愿意看到这东西……",
+   "wild": true,
+   "weights": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": true
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7
+   ]
+  },
+  {
+   "id": "dieBalatro",
+   "cn": "弄臣的骰子",
+   "en": "Balatro's die",
+   "price": 1600,
+   "icon": "die_balatro",
+   "desc": "一枚由弄臣Jimbo铸造的骰子，六面皆镌其标志性咧嘴笑。投掷完成后，持有者可以决定这次骰子的数值！",
+   "wild": true,
+   "weights": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": true
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7
+   ]
+  },
+  {
+   "id": "dieBalanced",
+   "cn": "低出目骰子",
+   "en": "Shrinking playing die",
+   "price": 150,
+   "icon": "die_p",
+   "desc": "作弊痕迹十分轻微的骰子，几乎难以与普通骰子作出区分。",
+   "wild": false,
+   "weights": [
+    2,
+    1,
+    1,
+    1,
+    1,
+    3
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 3,
+     "wild": false
+    }
+   ],
+   "probs": [
+    22.2,
+    11.1,
+    11.1,
+    11.1,
+    11.1,
+    33.3
+   ]
+  },
+  {
+   "id": "dieUnlucky",
+   "cn": "厄运骰",
+   "en": "Die of misfortune",
+   "price": 110,
+   "icon": "die_e",
+   "desc": "祸不单行，但如果你用这颗骰子，那厄运可就要成群结队地凑过来了。",
+   "wild": false,
+   "weights": [
+    1,
+    5,
+    5,
+    5,
+    5,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 5,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 5,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 5,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 5,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    4.5,
+    22.7,
+    22.7,
+    22.7,
+    22.7,
+    4.5
+   ]
+  },
+  {
+   "id": "die_e",
+   "cn": "恶三骰",
+   "en": "Fer die",
+   "price": 1120,
+   "icon": "die_r",
+   "desc": "恶魔般的骰子的第三个，也是最后一个。",
+   "wild": false,
+   "weights": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    6
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 6,
+     "wild": false
+    }
+   ],
+   "probs": [
+    14.3,
+    14.3,
+    14.3,
+    14.3,
+    14.3,
+    28.6
+   ]
+  },
+  {
+   "id": "die_sarlatan",
+   "cn": "圣斯蒂芬骰子",
+   "en": "St. Stephen's die",
+   "price": 3330,
+   "icon": "die_k",
+   "desc": "圣斯蒂芬赐福过的骰子，能保佑你得到想要的数字，还能让你免受飞石的伤害。",
+   "wild": false,
+   "weights": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7
+   ]
+  },
+  {
+   "id": "die_Kolacova",
+   "cn": "派骰子",
+   "en": "Pie die",
+   "price": 310,
+   "icon": "die_k",
+   "desc": "看起来很普通的骰子，但经常能骰出小数字。",
+   "wild": false,
+   "weights": [
+    6,
+    1,
+    3,
+    3,
+    0,
+    0
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 0,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 0,
+     "wild": false
+    }
+   ],
+   "probs": [
+    46.2,
+    7.7,
+    23.1,
+    23.1,
+    0,
+    0
+   ]
+  },
+  {
+   "id": "dieFavourable",
+   "cn": "好运骰子",
+   "en": "Favourable die",
+   "price": 450,
+   "icon": "die_j",
+   "desc": "会带来好运的骰子，带来好运的次数超出你的预期。",
+   "wild": false,
+   "weights": [
+    6,
+    0,
+    1,
+    1,
+    6,
+    4
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 0,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 4,
+     "wild": false
+    }
+   ],
+   "probs": [
+    33.3,
+    0,
+    5.6,
+    5.6,
+    33.3,
+    22.2
+   ]
+  },
+  {
+   "id": "dieLuckyQuest",
+   "cn": "幸运骰子",
+   "en": "Lucky die",
+   "price": 600,
+   "icon": "die_o",
+   "desc": "当好运降临时，回应以微笑，否则会看起来很可疑。",
+   "wild": false,
+   "weights": [
+    6,
+    1,
+    2,
+    3,
+    4,
+    6
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 2,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 4,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 6,
+     "wild": false
+    }
+   ],
+   "probs": [
+    27.3,
+    4.5,
+    9.1,
+    13.6,
+    18.2,
+    27.3
+   ]
+  },
+  {
+   "id": "dieCursed",
+   "cn": "修士的骰子",
+   "en": "Monk's die",
+   "price": 1600,
+   "icon": "dieCursed",
+   "desc": "没人说得清这骰子到底是让圣人开过光，还是被喝大的修士吐过口水。不管怎么说，投……倒是能投。说是好人用它能有好事，但坏蛋用了就心生妄念，走路还会被空气绊脚。不过也有人觉得这效果其实是反过来的。",
+   "wild": false,
+   "weights": [
+    8,
+    8,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 8,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 8,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    40,
+    40,
+    5,
+    5,
+    5,
+    5
+   ]
+  },
+  {
+   "id": "zikmunduvTabor_grozavGotchaDie",
+   "cn": "格罗扎夫的幸运骰子",
+   "en": "Grozav's lucky die",
+   "price": 250,
+   "icon": "die_m",
+   "desc": "其实没那么幸运，不过不要告诉别人！",
+   "wild": false,
+   "weights": [
+    1,
+    10,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 10,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    6.7,
+    66.7,
+    6.7,
+    6.7,
+    6.7,
+    6.7
+   ]
+  },
+  {
+   "id": "dieTeeth_a",
+   "cn": "臼齿骰子",
+   "en": "Molar die",
+   "price": 200,
+   "icon": "dieTeeth_a",
+   "desc": "一颗臼齿制成的骰子，最好不要问它是怎么来的。",
+   "wild": false,
+   "weights": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7,
+    16.7
+   ]
+  },
+  {
+   "id": "prepadeni_dieBarn",
+   "cn": "灌铅骰子",
+   "en": "Weighted die",
+   "price": 700,
+   "icon": "die_e",
+   "desc": "一个神秘的骰子，经常骰出1点。",
+   "wild": false,
+   "weights": [
+    10,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 10,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 1,
+     "wild": false
+    }
+   ],
+   "probs": [
+    66.7,
+    6.7,
+    6.7,
+    6.7,
+    6.7,
+    6.7
+   ]
+  },
+  {
+   "id": "dieBlue",
+   "cn": "涂漆骰子",
+   "en": "Painted die",
+   "price": 650,
+   "icon": "die_r",
+   "desc": "一颗使用先进工艺着色的骰子，用来掩盖它被做过手脚的事实。",
+   "wild": false,
+   "weights": [
+    3,
+    1,
+    1,
+    1,
+    6,
+    3
+   ],
+   "faces": [
+    {
+     "v": 1,
+     "w": 3,
+     "wild": false
+    },
+    {
+     "v": 2,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 3,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 4,
+     "w": 1,
+     "wild": false
+    },
+    {
+     "v": 5,
+     "w": 6,
+     "wild": false
+    },
+    {
+     "v": 6,
+     "w": 3,
+     "wild": false
+    }
+   ],
+   "probs": [
+    20,
+    6.7,
+    6.7,
+    6.7,
+    40,
+    20
+   ]
+  }
+ ],
+ "levels": [
+  {
+   "key": "beggar",
+   "cn": "乞丐",
+   "bet": 30,
+   "tier": -1,
+   "npc": {
+    "name": "老贝纳",
+    "title": "乞丐",
+    "blurb": "拄着木拐，输光了也笑"
+   },
+   "ai": {
+    "threshold": 200,
+    "mistake": 0.45
+   },
+   "score": 1500,
+   "scoreApprox": false
+  },
+  {
+   "key": "wagoner",
+   "cn": "车夫",
+   "bet": 100,
+   "tier": 0,
+   "npc": {
+    "name": "维特克",
+    "title": "车夫",
+    "blurb": "见好就收，稳扎稳打"
+   },
+   "ai": {
+    "threshold": 350,
+    "mistake": 0.38
+   },
+   "score": 2000,
+   "scoreApprox": false
+  },
+  {
+   "key": "farmer",
+   "cn": "农夫",
+   "bet": 50,
+   "tier": 0,
+   "npc": {
+    "name": "雅罗斯",
+    "title": "农夫",
+    "blurb": "天亮还要下地，不敢久赌"
+   },
+   "ai": {
+    "threshold": 260,
+    "mistake": 0.4
+   },
+   "score": 2000,
+   "scoreApprox": true
+  },
+  {
+   "key": "miner",
+   "cn": "矿工",
+   "bet": 150,
+   "tier": 0,
+   "npc": {
+    "name": "马丁",
+    "title": "矿工",
+    "blurb": "矿灯下练出来的手感"
+   },
+   "ai": {
+    "threshold": 420,
+    "mistake": 0.33
+   },
+   "score": 3000,
+   "scoreApprox": false
+  },
+  {
+   "key": "novice",
+   "cn": "学徒",
+   "bet": 250,
+   "tier": 0,
+   "npc": {
+    "name": "米库拉什",
+    "title": "修道院学徒",
+    "blurb": "刚学会计数，手比脑子快"
+   },
+   "ai": {
+    "threshold": 380,
+    "mistake": 0.28
+   },
+   "score": 4000,
+   "scoreApprox": false
+  },
+  {
+   "key": "craftsman",
+   "cn": "工匠",
+   "bet": 500,
+   "tier": 1,
+   "npc": {
+    "name": "菲利普",
+    "title": "工匠",
+    "blurb": "算得清每一枚格罗申"
+   },
+   "ai": {
+    "threshold": 520,
+    "mistake": 0.22
+   },
+   "score": 3000,
+   "scoreApprox": false
+  },
+  {
+   "key": "soldier",
+   "cn": "士兵",
+   "bet": 400,
+   "tier": 1,
+   "npc": {
+    "name": "卢卡斯",
+    "title": "雇佣兵",
+    "blurb": "输了就抢，赢了就喝"
+   },
+   "ai": {
+    "threshold": 620,
+    "mistake": 0.24
+   },
+   "score": 3000,
+   "scoreApprox": false
+  },
+  {
+   "key": "priest",
+   "cn": "牧师",
+   "bet": 700,
+   "tier": 1,
+   "npc": {
+    "name": "波胡斯拉夫",
+    "title": "乡村牧师",
+    "blurb": "一边掷骰一边替你祈祷"
+   },
+   "ai": {
+    "threshold": 560,
+    "mistake": 0.18
+   },
+   "score": 4000,
+   "scoreApprox": false
+  },
+  {
+   "key": "knight",
+   "cn": "骑士",
+   "bet": 1100,
+   "tier": 1,
+   "npc": {
+    "name": "兹德涅克",
+    "title": "骑士",
+    "blurb": "桌上也要讲荣誉"
+   },
+   "ai": {
+    "threshold": 700,
+    "mistake": 0.14
+   },
+   "score": 5000,
+   "scoreApprox": false
+  },
+  {
+   "key": "courtier",
+   "cn": "侍臣",
+   "bet": 1300,
+   "tier": 2,
+   "npc": {
+    "name": "拉迪姆",
+    "title": "宫廷侍臣",
+    "blurb": "礼数周全，下手极狠"
+   },
+   "ai": {
+    "threshold": 740,
+    "mistake": 0.12
+   },
+   "score": 4000,
+   "scoreApprox": false
+  },
+  {
+   "key": "cardinal",
+   "cn": "枢机主教",
+   "bet": 950,
+   "tier": 2,
+   "npc": {
+    "name": "瓦茨拉夫",
+    "title": "枢机主教",
+    "blurb": "主的骰子也是骰子"
+   },
+   "ai": {
+    "threshold": 680,
+    "mistake": 0.1
+   },
+   "score": 4000,
+   "scoreApprox": true
+  },
+  {
+   "key": "lord",
+   "cn": "领主",
+   "bet": 1500,
+   "tier": 2,
+   "npc": {
+    "name": "赫拉德克",
+    "title": "领主",
+    "blurb": "领地够大，输了也不心疼"
+   },
+   "ai": {
+    "threshold": 800,
+    "mistake": 0.09
+   },
+   "score": 6000,
+   "scoreApprox": true
+  },
+  {
+   "key": "king",
+   "cn": "国王",
+   "bet": 1800,
+   "tier": 2,
+   "npc": {
+    "name": "瓦茨拉夫四世",
+    "title": "国王",
+    "blurb": "王冠给你，骰子归我"
+   },
+   "ai": {
+    "threshold": 860,
+    "mistake": 0.06
+   },
+   "score": 8000,
+   "scoreApprox": false
+  },
+  {
+   "key": "emperor",
+   "cn": "皇帝",
+   "bet": 3000,
+   "tier": 2,
+   "npc": {
+    "name": "西吉斯蒙德",
+    "title": "皇帝",
+    "blurb": "整个帝国都在他的骰盅里"
+   },
+   "ai": {
+    "threshold": 920,
+    "mistake": 0.03
+   },
+   "score": 8000,
+   "scoreApprox": false
+  }
+ ],
+ "players": [
+  {
+   "key": "benard",
+   "name": "骰子玩家贝纳",
+   "level": "beggar",
+   "blurb": "唯一的本事是坐得住——反正输的也不多。",
+   "dice": [
+    "dieNormal",
+    "dieNormal",
+    "dieNormal",
+    "dieNormal",
+    "dieNormal",
+    "dieNormal"
+   ],
+   "ai": {
+    "threshold": 220,
+    "mistake": 0.46
+   }
+  },
+  {
+   "key": "mary",
+   "name": "骰子玩家玛丽",
+   "level": "farmer",
+   "blurb": "酒馆老板娘。笑得甜，收得稳。",
+   "dice": [
+    "dieNormal",
+    "dieNormal",
+    "dieNormal",
+    "dieNormal",
+    "dieUnbalanced",
+    "dieUnbalanced"
+   ],
+   "ai": {
+    "threshold": 300,
+    "mistake": 0.38
+   }
+  },
+  {
+   "key": "martin",
+   "name": "骰子玩家马丁",
+   "level": "miner",
+   "blurb": "矿灯下练出来的手感，偏爱幸运骰子。",
+   "dice": [
+    "dieNormal",
+    "dieNormal",
+    "dieNormal",
+    "dieLucky",
+    "dieLucky",
+    "dieTeeth_a"
+   ],
+   "ai": {
+    "threshold": 430,
+    "mistake": 0.32
+   }
+  },
+  {
+   "key": "vitek",
+   "name": "骰子玩家维特克",
+   "level": "soldier",
+   "blurb": "只信偶数的老兵：二、四、六，好数。",
+   "dice": [
+    "dieNormal",
+    "dieNormal",
+    "dieNormal",
+    "dieEven",
+    "dieEven",
+    "dieEven"
+   ],
+   "ai": {
+    "threshold": 600,
+    "mistake": 0.24
+   }
+  },
+  {
+   "key": "filip",
+   "name": "骰子玩家菲利普",
+   "level": "craftsman",
+   "blurb": "工匠的算盘：圣安提阿克斯配圣三一。",
+   "dice": [
+    "dieNormal",
+    "dieNormal",
+    "die_Antiocha",
+    "die_Antiocha",
+    "dieHolyTrinity",
+    "dieHolyTrinity"
+   ],
+   "ai": {
+    "threshold": 520,
+    "mistake": 0.22
+   }
+  },
+  {
+   "key": "zdnek",
+   "name": "骰子玩家兹德涅克",
+   "level": "knight",
+   "blurb": "骑士的荣誉在剑上，骰桌上只讲国王骰。",
+   "dice": [
+    "dieNormal",
+    "die_Antiocha",
+    "die_Antiocha",
+    "die_Kralova",
+    "die_Kralova",
+    "die_Ci"
+   ],
+   "ai": {
+    "threshold": 700,
+    "mistake": 0.13
+   }
+  }
+ ]
+};
+
+</script>
+<script>
+"use strict";/*__LOGIC_START__*/
+/* 纯逻辑区：不碰 DOM，测试脚本会把这一段抽出来单独跑（test.mjs / e2e.mjs 依赖）*/
+var DATA = (typeof window !== "undefined" && window.KCD2_DATA) ? window.KCD2_DATA : null;
+var BADGE_DATA = (typeof window !== "undefined" && window.BADGES) ? window.BADGES : null;
+
+var FALLBACK_DICE = [
+  { id: "dieNormal", cn: "普通骰子", en: "Ordinary die", price: 10, weights: [1,1,1,1,1,1],
+    faces: [{v:1,w:1},{v:2,w:1},{v:3,w:1},{v:4,w:1},{v:5,w:1},{v:6,w:1}],
+    probs: [16.7,16.7,16.7,16.7,16.7,16.7], wild: false, desc: "" },
+  { id: "dieDevil", cn: "魔鬼骰子", en: "Devil's head die", price: 1600, weights: [1,1,1,1,1,1],
+    faces: [{v:1,w:1,wild:true},{v:2,w:1},{v:3,w:1},{v:4,w:1},{v:5,w:1},{v:6,w:1}],
+    probs: [16.7,16.7,16.7,16.7,16.7,16.7], wild: true, desc: "" }
+];
+
+var DICE = (DATA && DATA.dice && DATA.dice.length) ? DATA.dice : FALLBACK_DICE;
+var LEVELS = (DATA && DATA.levels) ? DATA.levels : [
+  { key: "beggar", cn: "乞丐", bet: 30, tier: -1, npc: { name: "老贝纳", title: "乞丐", blurb: "" }, ai: { threshold: 200, mistake: 0.45 } },
+  { key: "knight", cn: "骑士", bet: 1100, tier: 1, npc: { name: "兹德涅克", title: "骑士", blurb: "" }, ai: { threshold: 700, mistake: 0.12 } },
+  { key: "emperor", cn: "皇帝", bet: 3000, tier: 2, npc: { name: "西吉斯蒙德", title: "皇帝", blurb: "" }, ai: { threshold: 920, mistake: 0.03 } }
+];
+var TARGET_SCORE = (DATA && DATA.target) ? DATA.target : 4000;
+/* 各规则档的目标分来自 Tables.pak → Libs/Tables/rpg/rpg_param.xml：
+   DiceGameTypeScoreBeggar=1500 / Wagoner=2000 / Miner=3000 / Soldier=3000 / Craftsman=3000 /
+   Novice=4000 / Priest=4000 / Courtier=4000 / Knight=5000 / King=8000 / Emperor=8000
+   （farmer / cardinal / lord 三档在表里没有键，data.js 里标 approx 并取邻近值推断） */
+function targetScore(level) {
+  return (level && level.score) ? level.score : TARGET_SCORE;
+}
+var BADGES = (BADGE_DATA && BADGE_DATA.items) ? BADGE_DATA.items : [];
+
+var ORDINARY_DIE = null;
+for (var di = 0; di < DICE.length; di++) if (DICE[di].id === "dieNormal") ORDINARY_DIE = DICE[di];
+if (!ORDINARY_DIE) ORDINARY_DIE = DICE[0];
+
+function levelByKey(key) {
+  for (var i = 0; i < LEVELS.length; i++) if (LEVELS[i].key === key) return LEVELS[i];
+  return null;
+}
+function badgesOfTier(t) {
+  var out = [];
+  for (var i = 0; i < BADGES.length; i++) if (BADGES[i].tier === t) out.push(BADGES[i]);
+  return out;
+}
+
+var KIND_BASE = { 1: 1000, 2: 200, 3: 300, 4: 400, 5: 500, 6: 600 };
+var PART_MEMO = {};
+
+/* 徽章提供的计分变体（目前只影响玩家自己）：三倍 1、双倍六条、阵型特殊组合 */
+function scoringOptsKey(opts) {
+  if (!opts) return "";
+  var k = "";
+  if (opts.tripleOnes) k += "T";
+  if (opts.boostSixes) k += "B";
+  if (opts.formation && opts.formation.length) k += "F" + opts.formation.length + opts.formation[0].name;
+  return k;
+}
+
+function countsOf(vals) {
+  var c = [0,0,0,0,0,0,0];
+  for (var i = 0; i < vals.length; i++) c[vals[i]]++;
+  return c;
+}
+
+/* 给定点数多重集，算「最优拆分」得分：单张 1/5、3~6 条、顺子、徽章阵型互相竞争 */
+function bestPartition(counts, opts) {
+  var ok = scoringOptsKey(opts);
+  var key = counts.join("") + "|" + ok;
+  if (PART_MEMO[key] !== undefined) return PART_MEMO[key];
+  var total = 0, i;
+  for (i = 1; i <= 6; i++) total += counts[i];
+  if (total === 0) { PART_MEMO[key] = 0; return 0; }
+  var best = 0, c, v, n;
+  if (counts[1] > 0) { c = counts.slice(); c[1]--; best = Math.max(best, 100 + bestPartition(c, opts)); }
+  if (counts[5] > 0) { c = counts.slice(); c[5]--; best = Math.max(best, 50 + bestPartition(c, opts)); }
+  for (v = 1; v <= 6; v++) {
+    for (n = 3; n <= counts[v] && n <= 6; n++) {
+      c = counts.slice(); c[v] -= n;
+      var base = KIND_BASE[v] * (n === 3 ? 1 : (1 << (n - 3)));
+      if (v === 1 && opts && opts.tripleOnes) base *= 3;
+      if (v === 6 && opts && opts.boostSixes) base *= 2;
+      best = Math.max(best, base + bestPartition(c, opts));
+    }
+  }
+  var allSix = true, small15 = true, small26 = true;
+  for (v = 1; v <= 6; v++) if (counts[v] < 1) allSix = false;
+  for (v = 1; v <= 5; v++) if (counts[v] < 1) small15 = false;
+  for (v = 2; v <= 6; v++) if (counts[v] < 1) small26 = false;
+  if (allSix) { c = counts.slice(); for (v = 1; v <= 6; v++) c[v]--; best = Math.max(best, 1500 + bestPartition(c, opts)); }
+  if (small15) { c = counts.slice(); for (v = 1; v <= 5; v++) c[v]--; best = Math.max(best, 500 + bestPartition(c, opts)); }
+  if (small26) { c = counts.slice(); for (v = 2; v <= 6; v++) c[v]--; best = Math.max(best, 750 + bestPartition(c, opts)); }
+  /* 徽章阵型：如切割 3+5、绞架 4,5,6、全视之眼 1,3,5 */
+  if (opts && opts.formation) {
+    for (var fi = 0; fi < opts.formation.length; fi++) {
+      var combo = opts.formation[fi];
+      c = counts.slice();
+      var can = true;
+      for (var ci = 0; ci < combo.dice.length; ci++) {
+        var dv = combo.dice[ci];
+        if (c[dv] < 1) { can = false; break; }
+        c[dv]--;
+      }
+      if (can) best = Math.max(best, combo.score + bestPartition(c, opts));
+    }
+  }
+  PART_MEMO[key] = best;
+  return best;
+}
+
+/* 骰面数组（数字或 "W"=百搭）→ 最优分；百搭穷举 6^k 种代入 */
+function scoreOf(faces, opts) {
+  var wilds = [], base = [], i;
+  for (i = 0; i < faces.length; i++) {
+    if (faces[i] === "W") { wilds.push(i); base.push(0); }
+    else base.push(faces[i]);
+  }
+  if (wilds.length === 0) return bestPartition(countsOf(base), opts);
+  var assign = [];
+  for (i = 0; i < wilds.length; i++) assign.push(1);
+  var best = 0;
+  for (;;) {
+    var vals = base.slice();
+    for (i = 0; i < wilds.length; i++) vals[wilds[i]] = assign[i];
+    best = Math.max(best, bestPartition(countsOf(vals), opts));
+    var k = assign.length - 1;
+    while (k >= 0) { if (assign[k] < 6) { assign[k]++; break; } assign[k] = 1; k--; }
+    if (k < 0) break;
+  }
+  return best;
+}
+
+function faceSymbols(items) {
+  var out = [];
+  for (var i = 0; i < items.length; i++) out.push(items[i].wild ? "W" : items[i].v);
+  return out;
+}
+
+function dieTotal(die) { return die.weights.reduce(function (a, b) { return a + b; }, 0); }
+
+/* 按权重掷一颗骰：返回 {v, wild}；rnd 可注入（测试用确定序列） */
+function rollDie(die, rnd) {
+  var total = dieTotal(die);
+  var r = rnd ? rnd() : Math.random(), acc = 0, i;
+  for (i = 0; i < die.faces.length; i++) {
+    acc += die.faces[i].w / total;
+    if (r < acc - 1e-12) return { v: die.faces[i].v, wild: !!die.faces[i].wild };
+  }
+  var last = die.faces[die.faces.length - 1];
+  return { v: last.v, wild: !!last.wild };
+}
+
+/* AI：枚举所有非空子集，取「即时得分最高、同分留骰最少」的保留方案；无一计分则返回 null */
+function aiChoose(items, opts) {
+  var n = items.length, best = null, mask, i;
+  for (mask = 1; mask < (1 << n); mask++) {
+    var sel = [], idx = [];
+    for (i = 0; i < n; i++) if (mask & (1 << i)) { sel.push(items[i]); idx.push(i); }
+    var sc = scoreOf(faceSymbols(sel), opts);
+    if (sc <= 0) continue;
+    var key = sc * 100 - sel.length;
+    if (!best || key > best.key) best = { indices: idx, score: sc, key: key };
+  }
+  return best;
+}
+
+function aiChooseWithMistake(items, mistake, rnd) {
+  var rr = rnd ? rnd() : Math.random;
+  if (rr() < mistake) {
+    var valid = [], n = items.length, mask, i;
+    for (mask = 1; mask < (1 << n); mask++) {
+      var sel = [], idx = [];
+      for (i = 0; i < n; i++) if (mask & (1 << i)) { sel.push(items[i]); idx.push(i); }
+      var sc = scoreOf(faceSymbols(sel));
+      if (sc > 0) valid.push({ indices: idx, score: sc });
+    }
+    if (valid.length > 0) return valid[Math.floor(rr() * valid.length)];
+    return null;
+  }
+  return aiChoose(items);
+}
+
+function shouldBank(turnScore, activeCount, target, total, threshold) {
+  if (total + turnScore >= target) return true;
+  if (turnScore >= threshold) return true;
+  if (activeCount <= 2 && turnScore >= 250) return true;
+  return false;
+}
+
+function dieBaseEv(die) {
+  var total = dieTotal(die), ev = 0, i;
+  for (i = 0; i < die.faces.length; i++) {
+    var f = die.faces[i], p = f.w / total;
+    if (f.wild) ev += p * 100;
+    else if (f.v === 1) ev += p * 100;
+    else if (f.v === 5) ev += p * 50;
+  }
+  return Math.round(ev * 10) / 10;
+}
+
+/* 徽章辅助：是否被动（开局/计分变体/防守） */
+function isPassiveBadge(b) {
+  if (!b || !b.effect) return false;
+  var k = b.effect.kind;
+  return k === "startScore" || k === "formation" || k === "nullify" || k === "tripleOnes" || k === "boostSixes";
+}
+function badgeEffectText(b) {
+  if (!b || !b.effect) return "";
+  var e = b.effect, k = e.kind;
+  if (k === "startScore") return "开局白得 " + e.amount + " 分";
+  if (k === "formation") return "解锁特殊组合：" + e.combos.map(function (c) { return c.name + "（" + c.dice.join("+") + " = " + c.score + " 分）"; }).join("、");
+  if (k === "nullify") return "抵消对手同档徽章";
+  if (k === "tripleOnes") return "1+1+1 的三倍分（3000 而非 1000）";
+  if (k === "boostSixes") return "三个 6 恒双倍分";
+  if (k === "rerollAfterBust") return "爆点后再掷一次（每局 " + b.uses + " 次）";
+  if (k === "doubleLastScore") return "本次投掷得分翻倍";
+  if (k === "turnMultiplier") return "本回合得分 ×" + e.amount;
+  if (k === "extraDie") return "本次多掷 1 颗骰子";
+  if (k === "rerollAny") return "重掷至多 " + e.amount + " 颗任意骰";
+  if (k === "rerollSame") return "重掷至多 " + e.amount + " 颗同点数骰";
+  if (k === "setDie") return "把 1 颗骰改成 " + e.amount + " 点";
+  if (k === "wildTo") return "把魔鬼头/小丑面改成任一点数";
+  return b.note || "";
+}
+/* ---- 选骰规则（m00619 需求①）：同名骰可重复带，灌铅骰限 1 颗 ---- */
+var MAX_DICE = 6;
+var LIMITED_DICE = { prepadeni_dieBarn: 1 };
+function copyLimit(die) { return (die && LIMITED_DICE[die.id]) || MAX_DICE; }
+function countDie(loadout, id) {
+  var n = 0;
+  for (var i = 0; i < loadout.length; i++) if (loadout[i].id === id) n++;
+  return n;
+}
+function canAddDie(loadout, die) {
+  if (!die) return false;
+  if (loadout.length >= MAX_DICE) return false;
+  return countDie(loadout, die.id) < copyLimit(die);
+}
+function addDie(loadout, die) { if (!canAddDie(loadout, die)) return false; loadout.push(die); return true; }
+function removeDieAt(loadout, idx) { if (idx >= 0 && idx < loadout.length) { loadout.splice(idx, 1); return true; } return false; }
+function dieById(id) { for (var i = 0; i < DICE.length; i++) if (DICE[i].id === id) return DICE[i]; return null; }
+
+/* ---- 幸运日 perk（m00619 需求⑤；m00850 修正）----
+   权威依据：Tables.pak → Libs/Tables/rpg/perk__kcd2.xml 的 perk_id 3cdd51ee-…（Lucky day）
+   → perk_buff.xml → buff__perk.xml 的 buff_id 8ff8ae27-c26f-48e6-9d45-d8523b0007ca：
+     buff_params="bnc+0.4"  implementation="Cpp:AlcoholMood"  duration="-1"  is_persistent="true"
+   官方文案 perk_lucky_day_desc："The more you're in the drunken mood, the higher chance you
+   have of not wasting your badge when you use it."
+   ⇒ 概率随醉酒程度线性升高，上限 = bnc 的 0.4（40%）；不是 34/67/100% 三档阶梯。
+   醉酒程度 0/1/2/3（清醒/微醺/半醉/烂醉）→ 0 / 13.3 / 26.7 / 40 %，每次用徽章独立判定。 */
+var LUCKY_MAX_CHANCE = 0.4;
+function luckyChance(drunk) {
+  if (!(drunk > 0)) return 0;
+  if (drunk >= 3) return LUCKY_MAX_CHANCE;
+  return LUCKY_MAX_CHANCE * drunk / 3;
+}
+function luckLabel(drunk) {
+  return drunk <= 0 ? "清醒" : drunk === 1 ? "微醺" : drunk === 2 ? "半醉" : "烂醉";
+}
+/*__LOGIC_END__*//* ============================ 应用层 ============================ */
+var $ = function (id) { return document.getElementById(id); };
+var WALLET_KEY = "kcd2dice.wallet";
+var DRUNK_KEY = "kcd2dice.drunk";
+
+var INFINITE_GOLD = true;
+
+var S = { player: null, level: null, mode: null, badge: null, loadout: [], game: null };
+var selection = {};
+
+var PLAYERS = (DATA && DATA.players) ? DATA.players : [];
+
+/* ---------------- 金币与醉酒（幸运日，m00850 修正） ----------------
+   无限金币：显示 ∞，不写入 localStorage，结算不改钱包。
+   醉酒 0-3：用徽章时按 luckyChance(drunk) 的概率不消耗次数，
+   概率 = 0.4 × 醉酒程度（data 依据 perk buff 参数 bnc+0.4 + 官方文案），
+   每次使用独立判定（旧版「每回合最多白赚 1 次」与 34/67/100% 阶梯都是自造，已删）。
+   toast 只在判定真正生效（徽章次数没被扣掉）时弹。 */
+var DRUNK_KEY2 = DRUNK_KEY;
+function loadDrunk() {
+  try {
+    var v = parseInt(localStorage.getItem(DRUNK_KEY2), 10);
+    return isFinite(v) ? Math.max(0, Math.min(3, v)) : 0;
+  } catch (e) { return 0; }
+}
+var drunk = loadDrunk();
+function saveDrunk() {
+  try { localStorage.setItem(DRUNK_KEY2, String(drunk)); } catch (e) {}
+}
+var wallet = INFINITE_GOLD ? Infinity : 1200;
+function saveWallet() {
+  var el = $("wallet");
+  if (el) el.textContent = INFINITE_GOLD ? "∞" : String(wallet);
+}
+
+var toastTimer = null;
+function showToast(line1, line2, line3) {
+  var box = $("toast");
+  if (!box) return;
+  $("toastL1").textContent = line1;
+  $("toastL2").textContent = line2;
+  $("toastL3").textContent = line3 || "";
+  box.classList.remove("hidden");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { box.classList.add("hidden"); }, 3200);
+}
+function updateLuck() {
+  var el = $("luckState");
+  if (!el) return;
+  if (drunk <= 0) el.innerHTML = "🍺 清醒";
+  else el.innerHTML = "🍺 <b>" + luckLabel(drunk) + "</b> · 幸运日 " + Math.round(luckyChance(drunk) * 100) + "%";
+  el.title = drunk <= 0
+    ? "幸运日：使用徽章时有不浪费次数的概率；喝得越醉越高，上限 40%"
+    : "幸运日：现在每次用徽章有 " + Math.round(luckyChance(drunk) * 100) + "% 概率不消耗次数（上限 40%）";
+}
+function drink() {
+  if (drunk >= 3) {
+    if (S.game && !S.game.over) appendLog("🍺 你已经喝到烂醉了（幸运日 40% 上限），再喝也没用。");
+    else setHint("已经喝到烂醉了（幸运日 40% 上限）");
+    return;
+  }
+  drunk++;
+  saveDrunk();
+  updateLuck();
+  var tip = "🍺 你喝了一口酒，现在是<b>" + luckLabel(drunk) + "</b>：用徽章时有 " +
+    Math.round(luckyChance(drunk) * 100) + "% 概率不消耗次数（上限 40%）。";
+  if (S.game && !S.game.over) appendLog(tip);
+  else setHint(tip.replace(/<[^>]+>/g, ""));
+}
+
+/* 幸运日结算：返回 true = 这次徽章没被浪费（不扣次数）
+   每次使用独立判定；判定通过才弹「你使用了这个技能 / 幸运日」提示卡。 */
+var luckyForce = null;   // 测试钩子：true=必中，false=必不中，null=按概率
+function luckyRoll() {
+  if (luckyForce !== null) return !!luckyForce;
+  return Math.random() < luckyChance(drunk);
+}
+function spendBadgeUse(b) {
+  var g = S.game;
+  if (!g || !g.badge) { return false; }
+  if (luckyChance(drunk) > 0 && luckyRoll()) {
+    g.luckyProcs = (g.luckyProcs || 0) + 1;
+    appendLog("🍺 <b>幸运日</b>生效（" + luckLabel(drunk) + "，" + Math.round(luckyChance(drunk) * 100) +
+      "% 判定通过）：这次「" + b.cn + "」没有浪费次数。");
+    showToast("你使用了这个技能", "幸运日",
+      "「" + b.cn + "」次数未消耗 · " + luckLabel(drunk) + " " + Math.round(luckyChance(drunk) * 100) + "% 判定通过");
+    return true;
+  }
+  g.badge.uses--;
+  return false;
+}
+
+function tierLabel(t) { return t < 0 ? "无徽章" : (t === 0 ? "锡制" : t === 1 ? "银制" : "金制"); }
+function tierClass(t) { return t < 0 ? "none" : ("t" + t); }
+function rankOf(lvl) {
+  var sorted = LEVELS.slice().sort(function (a, b) { return a.bet - b.bet; });
+  for (var i = 0; i < sorted.length; i++) if (sorted[i].key === lvl.key) return i + 1;
+  return 1;
+}
+function dotsFor(lvl) {
+  var n = Math.max(1, Math.min(5, Math.ceil(rankOf(lvl) / 3)));
+  var html = "";
+  for (var i = 1; i <= 5; i++) html += "<i class='" + (i <= n ? "on" : "") + "'>◆</i>";
+  return html;
+}
+function levelOfPlayer(pl) { return levelByKey(pl.level) || LEVELS[0]; }
+function playerDice(pl) {
+  var out = [];
+  (pl.dice || []).forEach(function (id) { out.push(dieById(id) || ORDINARY_DIE); });
+  while (out.length < MAX_DICE) out.push(ORDINARY_DIE);
+  return out.slice(0, MAX_DICE);
+}
+function diceSummary(list) {
+  var order = [], cnt = {};
+  list.forEach(function (d) { if (!cnt[d.id]) { cnt[d.id] = 0; order.push(d); } cnt[d.id]++; });
+  return order.map(function (d) { return shortDieName(d) + (cnt[d.id] > 1 ? "×" + cnt[d.id] : ""); }).join(" · ");
+}
+
+var CRUMBS = [["npc", "选对手"], ["mode", "规则"], ["badge", "徽章"], ["dice", "骰子"], ["game", "对局"]];
+function renderCrumbs(current) {
+  var html = "";
+  CRUMBS.forEach(function (c, i) {
+    if (i) html += "<span class='sep'>›</span>";
+    html += "<span class='crumb" + (c[0] === current ? " on" : "") + "'>" + c[1] + "</span>";
+  });
+  $("crumbs").innerHTML = html;
+}
+function go(name) {
+  var all = document.querySelectorAll(".screen");
+  for (var i = 0; i < all.length; i++) all[i].classList.remove("on");
+  $("scr-" + name).classList.add("on");
+  renderCrumbs(name);
+  window.scrollTo(0, 0);
+  if (name === "npc") renderPlayers();
+}
+
+/* ---------------- 一级：选骰子玩家 ---------------- */
+function renderPlayers() {
+  var host = $("playerGrid");
+  if (!host) return;
+  host.innerHTML = "";
+  var grid = document.createElement("div");
+  grid.className = "grid";
+  PLAYERS.forEach(function (pl) {
+    var lvl = levelOfPlayer(pl);
+    var b = document.createElement("button");
+    b.className = "card";
+    b.setAttribute("data-player", pl.key);
+    b.innerHTML =
+      "<div class='top'><div><div class='who'>" + pl.name + "</div>" +
+      "<div class='title'>规则档 " + lvl.cn + " · 先到 " + targetScore(lvl) + " 分" +
+      (lvl.scoreApprox ? "<span class='approx'>（推断）</span>" : "") + "</div></div>" +
+      "<span class='tag " + tierClass(lvl.tier) + "'>" + tierLabel(lvl.tier) + "</span></div>" +
+      "<div class='blurb'>" + (pl.blurb || "") + "</div>" +
+      "<div class='dicerow'>骰组：" + diceSummary(playerDice(pl)) + "</div>" +
+      "<div class='row'><span>底注 <span class='bet'>" + lvl.bet + "</span> 格罗申</span>" +
+      "<span class='dots'>" + dotsFor(lvl) + "</span></div>";
+    b.addEventListener("click", function () { pickPlayer(pl); });
+    grid.appendChild(b);
+  });
+  host.appendChild(grid);
+}
+function renderNpc() { renderPlayers(); }
+
+function pickPlayer(pl) {
+  S.player = pl;
+  S.level = levelOfPlayer(pl);
+  S.mode = null; S.badge = null; S.loadout = [];
+  renderMode();
+  go("mode");
+}
+function pickLevel(lvl) {
+  var pl = null;
+  for (var i = 0; i < PLAYERS.length; i++) if (PLAYERS[i].level === lvl.key) { pl = PLAYERS[i]; break; }
+  if (pl) return pickPlayer(pl);
+  S.player = { key: lvl.key, name: lvl.npc.name, level: lvl.key, blurb: lvl.npc.blurb, dice: [] };
+  S.level = lvl;
+  S.mode = null; S.badge = null; S.loadout = [];
+  renderMode();
+  go("mode");
+}
+
+/* ---------------- 二级：规则 ---------------- */
+function renderMode() {
+  var lvl = S.level, pl = S.player;
+  $("modeTitle").textContent = pl.name + " · 规则档 " + lvl.cn;
+  $("modeSub").innerHTML =
+    "底注 <b style='color:#f0d68f'>" + lvl.bet + "</b> 格罗申，目标分 <b style='color:#f0d68f'>" + targetScore(lvl) +
+    "</b>" + (lvl.scoreApprox ? "（此档在 rpg_param.xml 里没有键，取邻近值推断）" : "") +
+    "。对手骰组：" + diceSummary(playerDice(pl)) + "；对手徽章档位：" + tierLabel(lvl.tier) +
+    "（结算阈值 " + lvl.ai.threshold + " 分、失误率 " + Math.round(lvl.ai.mistake * 100) + "%）。";
+  var host = $("modeChoice");
+  host.innerHTML = "";
+  var canBadge = lvl.tier >= 0 && badgesOfTier(lvl.tier).length > 0;
+  var opts = [
+    { id: "plain", title: "无徽章局", desc: "双方都不使用徽章，规则最干净。", locked: false, why: "" },
+    {
+      id: "badge", title: "徽章局（" + tierLabel(lvl.tier) + "）",
+      desc: canBadge ? "只能选同档徽章。共 " + badgesOfTier(lvl.tier).length + " 件可选，对手也会亮出同档徽章。" : "这一档不玩徽章——游戏数据把乞丐档映射为 invalidTier。",
+      locked: !canBadge, why: !canBadge ? "此档没有徽章" : ""
+    }
+  ];
+  opts.forEach(function (o) {
+    var b = document.createElement("button");
+    b.className = "opt" + (o.locked ? " locked" : "") + (S.mode === o.id ? " sel" : "");
+    b.setAttribute("data-mode", o.id);
+    b.disabled = o.locked;
+    b.innerHTML = "<h3>" + o.title + "</h3><p>" + o.desc + (o.why ? " <span style='color:#e6a08c'>（" + o.why + "）</span>" : "") + "</p>";
+    b.addEventListener("click", function () {
+      S.mode = o.id;
+      if (o.id === "plain") S.badge = null;
+      renderMode();
+      $("btnModeNext").disabled = false;
+    });
+    host.appendChild(b);
+  });
+  $("btnModeNext").disabled = !S.mode;
+}
+
+/* ---------------- 三级：徽章 ---------------- */
+function renderBadge() {
+  var lvl = S.level;
+  var host = $("badgeChoice");
+  host.innerHTML = "";
+  if (S.mode === "plain") {
+    $("badgeSub").innerHTML = "你选了<b>无徽章局</b>：本局双方都不使用徽章。想用徽章可以回上一步改选「徽章局」。";
+  } else {
+    $("badgeSub").innerHTML = "徽章局：只能选与对手同档（<b>" + tierLabel(lvl.tier) + "</b>）的徽章。共 " +
+      BADGES.length + " 件徽章数据（来自 item.xml 的 DiceBadge 行）中，本档有 " + badgesOfTier(lvl.tier).length + " 件。" +
+      (drunk > 0 ? " 当前 🍺 <b>" + luckLabel(drunk) + "</b>：有 " + Math.round(luckyChance(drunk) * 100) + "% 概率不消耗次数。" : "");
+  }
+  var noneBtn = document.createElement("button");
+  noneBtn.className = "opt" + (S.badge === null ? " sel" : "");
+  noneBtn.setAttribute("data-badge", "none");
+  noneBtn.innerHTML = "<h3>不用徽章</h3><p>裸骰上桌。</p>";
+  noneBtn.addEventListener("click", function () { S.badge = null; renderBadge(); });
+  host.appendChild(noneBtn);
+
+  if (S.mode === "badge") {
+    badgesOfTier(lvl.tier).forEach(function (b) {
+      var el = document.createElement("button");
+      el.className = "opt" + (S.badge && S.badge.id === b.id ? " sel" : "");
+      el.setAttribute("data-badge", b.id);
+      el.innerHTML = "<h3>" + b.cn + "</h3><p>" + badgeEffectText(b) + "<br>" + (b.note || "") +
+        "<br><span style='color:#a8916b'>每局 " + b.uses + " 次 · " + b.price + " G</span></p>";
+      el.addEventListener("click", function () { S.badge = b; renderBadge(); });
+      host.appendChild(el);
+    });
+  }
+}
+
+/* ---------------- 四级：选骰子 ---------------- */
+function renderDice() {
+  var slots = $("slots");
+  slots.innerHTML = "";
+  var list = S.loadout.slice();
+  while (list.length < MAX_DICE) list.push(null);
+  list.forEach(function (d, idx) {
+    var el = document.createElement("div");
+    el.className = "slot" + (d ? " filled" : "");
+    if (d) {
+      el.innerHTML = "<span>" + shortDieName(d) + "</span><span class='rm'>×</span>";
+      el.title = d.cn + " · 点一下移除";
+      (function (i) { el.addEventListener("click", function () { S.loadout.splice(i, 1); renderDice(); }); })(idx);
+    } else {
+      el.textContent = "普通骰";
+      el.title = "空位会用普通骰子补齐";
+    }
+    slots.appendChild(el);
+  });
+  $("diceCount").textContent = "已选 " + S.loadout.length + " / " + MAX_DICE +
+    (S.loadout.length < MAX_DICE ? "（其余补普通骰）" : "");
+
+  var host = $("dicePick");
+  host.innerHTML = "";
+  var sorted = DICE.slice().sort(function (a, b) { return b.price - a.price; });
+  sorted.forEach(function (d) {
+    var have = countDie(S.loadout, d.id), lim = copyLimit(d), capped = have >= lim;
+    var b = document.createElement("button");
+    b.className = "diecard" + (have > 0 ? " sel" : "") + (capped ? " capped" : "");
+    b.setAttribute("data-die", d.id);
+    b.title = d.cn + "：点一下加一颗" + (lim < MAX_DICE ? "（最多 " + lim + " 颗）" : "（可带多颗）");
+    var bars = "";
+    var maxP = Math.max.apply(null, d.probs);
+    for (var i = 0; i < d.faces.length; i++) {
+      var f = d.faces[i];
+      var h = Math.round(4 + (d.probs[i] / maxP) * 24);
+      bars += "<div class='b" + (f.wild ? " j" : "") + "' style='height:" + h + "px' title='" + d.probs[i] + "%'><span>" + (f.wild ? "J" : f.v) + "</span></div>";
+    }
+    b.innerHTML = "<div class='nm'>" + d.cn + "</div>" +
+      (lim < MAX_DICE
+        ? "<span class='limit'>" + (have > 0 ? "已带 " + have + " / " + lim : "限 " + lim + " 颗") + "</span>"
+        : (have > 0 ? "<span class='cnt'>×" + have + "</span>" : "")) +
+      "<div class='bars'>" + bars + "</div>" +
+      "<div class='px'><span>" + (d.wild ? "含百搭面" : "无百搭") + "</span><span>" + d.price + " G</span></div>";
+    b.addEventListener("click", function () { toggleDice(d); });
+    host.appendChild(b);
+  });
+  setDiceHint("");
+}
+
+function shortDieName(d) { return d.cn.replace("的骰子", "").replace("骰子", "").replace(/^的/, ""); }
+function setDiceHint(msg) {
+  var el = $("diceHint");
+  if (el) el.textContent = msg;
+}
+
+function toggleDice(d) {
+  var have = countDie(S.loadout, d.id), lim = copyLimit(d);
+  if (have >= lim) {
+    setDiceHint("「" + d.cn + "」整局最多带 " + lim + " 颗");
+    return;
+  }
+  if (S.loadout.length >= MAX_DICE) {
+    setDiceHint("已经 " + MAX_DICE + " 颗了，点上方槽位去掉一颗");
+    return;
+  }
+  S.loadout.push(d);
+  renderDice();
+}
+
+function recommendDice() {
+  var sorted = DICE.slice().sort(function (a, b) { return dieBaseEv(b) - dieBaseEv(a) || b.price - a.price; });
+  var out = [];
+  for (var i = 0; i < sorted.length && out.length < MAX_DICE; i++) out.push(sorted[i]);
+  S.loadout = out;
+  renderDice();
+}
+
+/* ---------------- 对局 ---------------- */
+var PIPS = {
+  1: [[2, 2]], 2: [[1, 1], [3, 3]], 3: [[1, 1], [2, 2], [3, 3]],
+  4: [[1, 1], [1, 3], [3, 1], [3, 3]], 5: [[1, 1], [1, 3], [2, 2], [3, 1], [3, 3]],
+  6: [[1, 1], [1, 3], [2, 1], [2, 3], [3, 1], [3, 3]]
+};
+function devilSvg() {
+  return "<svg class='devil' viewBox='0 0 24 24' aria-hidden='true'>" +
+    "<path d='M6 8 L3.4 3.4 L9.4 6.2 Z' fill='#b3402c'/>" +
+    "<path d='M18 8 L20.6 3.4 L14.6 6.2 Z' fill='#b3402c'/>" +
+    "<circle cx='12' cy='13.2' r='7.2' fill='#c2402a'/>" +
+    "<circle cx='9.4' cy='12.2' r='1.15' fill='#2b1006'/>" +
+    "<circle cx='14.6' cy='12.2' r='1.15' fill='#2b1006'/>" +
+    "<path d='M9.3 16.1 q2.7 1.7 5.4 0' stroke='#2b1006' stroke-width='1.2' fill='none' stroke-linecap='round'/>" +
+    "</svg>";
+}
+function faceHtml(item) {
+  if (item.wild) return devilSvg();
+  var html = "<div class='pips'>", pts = PIPS[item.v];
+  for (var i = 0; i < pts.length; i++) html += "<span class='pip' style='grid-area:" + pts[i][0] + "/" + pts[i][1] + "'></span>";
+  return html + "</div>";
+}
+function dieNameOf(item) { return item && item.die ? shortDieName(item.die) : "普通骰"; }
+
+var rngOverride = null;  /* 测试钩子：注入确定随机源，e2e 用来消除爆点偶发 */
+function rollOne(die) { var r = rollDie(die, rngOverride || undefined); r.die = die; return r; }
+
+function playerOpts() {
+  var g = S.game;
+  if (!g || !g.badge || !g.badge.def) return null;
+  var e = g.badge.def.effect, opts = {};
+  if (e.kind === "tripleOnes") opts.tripleOnes = true;
+  if (e.kind === "boostSixes") opts.boostSixes = true;
+  if (e.kind === "formation") opts.formation = e.combos;
+  return (opts.tripleOnes || opts.boostSixes || opts.formation) ? opts : null;
+}
+function pScore(faces) { return scoreOf(faces, playerOpts()); }
+
+function pickAiBadge(lvl, playerBadge) {
+  if (lvl.tier < 0) return null;
+  if (playerBadge && playerBadge.effect.kind === "nullify") return null;
+  var list = badgesOfTier(lvl.tier).filter(function (b) { return b.effect.kind === "startScore"; });
+  if (!list.length) return null;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function startGame() {
+  var lvl = S.level, pl = S.player;
+  if (!lvl || !pl) return;
+  var set = S.loadout.slice();
+  while (set.length < MAX_DICE) set.push(ORDINARY_DIE);
+  set = set.slice(0, MAX_DICE);
+  var pb = S.badge;
+  var ab = pickAiBadge(lvl, pb);
+  S.game = {
+    pl: pl, level: lvl, dice: set, aiDice: playerDice(pl),
+    target: targetScore(lvl), player: 0, ai: 0, round: 1,
+    actor: "player", active: [], locked: [], turnScore: 0, busy: false, over: false,
+    badge: pb ? { def: pb, uses: pb.uses } : null,
+    aiBadge: ab ? { def: ab } : null,
+    multiplier: 1, mustUseBadge: false, badgeMode: null, badgeSel: [], valuePicker: null,
+    luckyProcs: 0
+  };
+  selection = {};
+  go("game");
+  $("hudTarget").textContent = S.game.target;
+  $("oppName").innerHTML = "<b>" + pl.name + "</b> · 规则档 " + lvl.cn + " · " + tierLabel(lvl.tier);
+  $("log").innerHTML = "";
+  var g = S.game;
+  if (pb) appendLog("<b>你带上徽章：</b>" + pb.cn + "（" + badgeEffectText(pb) + "）");
+  if (pb && pb.effect.kind === "nullify" && lvl.tier >= 0) appendLog("你的防守徽章把对手的徽章抵消了。");
+  if (ab) appendLog("<b>" + pl.name + " 亮出徽章：</b>" + ab.cn + "（" + badgeEffectText(ab) + "）");
+  if (pb && pb.effect.kind === "startScore") { g.player += pb.effect.amount; appendLog("先行徽章生效：你开局白得 " + pb.effect.amount + " 分。"); }
+  if (ab) { g.ai += ab.effect.amount; }
+  if (drunk > 0) appendLog("🍺 你带着<b>" + luckLabel(drunk) + "</b>上桌：用徽章时有 " + Math.round(luckyChance(drunk) * 100) + "% 概率不消耗次数。");
+  $("oppInfo").textContent = "底注 " + lvl.bet + " 格罗申 · 骰组 " + diceSummary(g.aiDice) + " · 先到 " + g.target + " 分" + (ab ? " · 对手徽章：" + ab.cn : "");
+  beginTurn("player");
+}
+
+function beginTurn(actor) {
+  var g = S.game;
+  g.actor = actor;
+  g.locked = [];
+  g.turnScore = 0;
+  g.multiplier = 1;
+  g.mustUseBadge = false;
+  g.badgeMode = null;
+  g.badgeSel = [];
+  g.valuePicker = null;
+  g.busy = false;
+  var dice = actor === "ai" ? g.aiDice : g.dice;
+  g.active = dice.map(function (d) { return rollOne(d); });
+  selection = {};
+  renderGame();
+  if (actor === "ai") {
+    g.busy = true;
+    setHint("对手正在掷骰…");
+    renderGame();
+    setTimeout(aiStep, 720);
+  } else {
+    if (pScore(faceSymbols(g.active)) === 0) { bust("player"); return; }
+    setHint("点选得分骰，然后选择继续掷或收分");
+  }
+}
+
+function activeSelection() {
+  var g = S.game, sel = [];
+  for (var i = 0; i < g.active.length; i++) if (selection[i]) sel.push(g.active[i]);
+  return sel;
+}
+function selectedScore() {
+  var sel = activeSelection();
+  if (!sel.length) return 0;
+  return pScore(faceSymbols(sel));
+}
+
+function renderGame() {
+  var g = S.game;
+  if (!g) return;
+  $("hudYou").textContent = g.player;
+  $("hudOpp").textContent = g.ai;
+  $("hudRound").textContent = g.round;
+  $("turnScore").textContent = g.turnScore;
+
+  var area = $("diceArea");
+  area.innerHTML = "";
+  g.active.forEach(function (item, i) {
+    var d = document.createElement("button");
+    var picked = selection[i] || (g.badgeMode && g.badgeSel.indexOf(i) >= 0);
+    d.className = "die" + (picked ? " held" : "") + (item.wild ? " wild" : "");
+    d.setAttribute("data-i", String(i));
+    d.setAttribute("data-die", item.die ? item.die.id : "dieNormal");
+    d.title = (item.die ? item.die.cn : "普通骰子") + (item.wild ? "（百搭面）" : "（" + item.v + " 点）");
+    d.innerHTML = faceHtml(item) + "<span class='dname'>" + dieNameOf(item) + "</span>";
+    d.addEventListener("click", function () { onDieClick(i); });
+    area.appendChild(d);
+  });
+  var lr = $("lockedRow");
+  if (g.locked.length) {
+    lr.innerHTML = "<span>本回合已收下的骰：</span>" + g.locked.map(function (f) {
+      return "<span class='lk'>" + (f.wild ? "百搭" : f.v) + "<i>" + dieNameOf(f) + "</i></span>";
+    }).join("");
+  } else lr.innerHTML = "";
+
+  var selSc = selectedScore();
+  var canRoll = g.actor === "player" && !g.busy && !g.over && !g.mustUseBadge;
+  $("btnRoll").disabled = !canRoll;
+  $("btnBank").disabled = !canRoll || selSc <= 0;
+  $("btnRoll").textContent = g.locked.length ? "重掷（剩 " + g.active.length + " 颗）" : "掷骰";
+  renderBadgeBar();
+}
+
+function onDieClick(i) {
+  var g = S.game;
+  if (!g || g.over) return;
+  if (g.badgeMode) {
+    if (g.actor !== "player") return;
+    var m = g.badgeMode, k = m.def.effect.kind, amount = m.def.effect.amount;
+    var pos = g.badgeSel.indexOf(i);
+    if (pos >= 0) { g.badgeSel.splice(pos, 1); renderGame(); return; }
+    if (k === "setDie" || k === "wildTo") {
+      if (k === "wildTo" && !g.active[i].wild) { setHint("只能选有魔鬼头/小丑图案的骰子"); return; }
+      g.badgeSel = [i];
+    } else {
+      if (g.badgeSel.length >= amount) { setHint("这颗徽章最多选 " + amount + " 颗"); return; }
+      if (k === "rerollSame" && g.badgeSel.length) {
+        var v0 = g.active[g.badgeSel[0]].wild ? "W" : g.active[g.badgeSel[0]].v;
+        var v1 = g.active[i].wild ? "W" : g.active[i].v;
+        if (v0 !== v1) { setHint("「调换」只能选同点数的骰子"); return; }
+      }
+      g.badgeSel.push(i);
+    }
+    renderGame();
+    return;
+  }
+  if (g.actor !== "player" || g.busy || g.mustUseBadge) return;
+  selection[i] = !selection[i];
+  renderGame();
+}
+
+function renderBadgeBar() {
+  var g = S.game, host = $("badgeBar");
+  host.innerHTML = "";
+  if (!g) return;
+  if (g.badge && g.badge.def) {
+    var b = g.badge.def, active = !isPassiveBadge(b);
+    var btn = document.createElement("button");
+    btn.className = "btn" + (active ? " on" : "");
+    btn.setAttribute("data-badgebtn", b.id);
+    btn.disabled = !active || g.badge.uses <= 0 || g.actor !== "player" || g.busy || g.over || !!g.mustUseBadge;
+    btn.textContent = b.cn + (active ? "（剩 " + g.badge.uses + " 次）" : " · 已生效");
+    btn.title = badgeEffectText(b) + (drunk > 0 ? " ｜ 🍺 幸运日 " + Math.round(luckyChance(drunk) * 100) + "% 不消耗次数" : "");
+    if (active) btn.addEventListener("click", function () { useBadge(b); });
+    host.appendChild(btn);
+  }
+  if (g.mustUseBadge) {
+    var u = document.createElement("button");
+    u.className = "btn green";
+    u.setAttribute("data-rescue", "1");
+    u.textContent = "用重掷徽章再掷一次（剩 " + g.badge.uses + " 次）";
+    u.addEventListener("click", useRescue);
+    host.appendChild(u);
+    var q = document.createElement("button");
+    q.className = "btn";
+    q.setAttribute("data-concede", "1");
+    q.textContent = "认了，丢掉本回合 " + g.turnScore + " 分";
+    q.addEventListener("click", concedeBust);
+    host.appendChild(q);
+    return;
+  }
+  if (g.badgeMode) {
+    var m = g.badgeMode, k = m.def.effect.kind;
+    var tip = document.createElement("span");
+    tip.className = "note";
+    tip.textContent = k === "setDie" ? "点一颗骰子，改成 " + m.def.effect.amount + " 点：" :
+      k === "wildTo" ? "点一颗魔鬼头骰子，然后选点数：" :
+      k === "rerollSame" ? "点 1~" + m.def.effect.amount + " 颗同点数骰：" :
+      "点 1~" + m.def.effect.amount + " 颗要重掷的骰：";
+    host.appendChild(tip);
+    var ok = document.createElement("button");
+    ok.className = "btn primary";
+    ok.setAttribute("data-badgeok", "1");
+    ok.disabled = g.badgeSel.length === 0;
+    ok.textContent = "确认用徽章（已选 " + g.badgeSel.length + "）";
+    ok.addEventListener("click", confirmBadge);
+    host.appendChild(ok);
+    var cancel = document.createElement("button");
+    cancel.className = "btn";
+    cancel.setAttribute("data-badgecancel", "1");
+    cancel.textContent = "取消";
+    cancel.addEventListener("click", function () {
+      g.badgeMode = null; g.badgeSel = []; renderGame();
+    });
+    host.appendChild(cancel);
+    return;
+  }
+  if (g.valuePicker) {
+    for (var v = 1; v <= 6; v++) {
+      (function (val) {
+        var vb = document.createElement("button");
+        vb.className = "btn";
+        vb.setAttribute("data-value", String(val));
+        vb.textContent = String(val) + " 点";
+        vb.addEventListener("click", function () { applyWildTo(val); });
+        host.appendChild(vb);
+      })(v);
+    }
+    return;
+  }
+}
+
+function useBadge(b) {
+  var g = S.game;
+  if (!g || g.busy || g.over || g.actor !== "player" || g.badge.uses <= 0 || g.mustUseBadge) return;
+  var e = b.effect, k = e.kind;
+  if (k === "turnMultiplier") {
+    spendBadgeUse(b); g.multiplier = e.amount;
+    appendLog("你发动「" + b.cn + "」：本回合得分 ×" + e.amount + "。");
+  } else if (k === "doubleLastScore") {
+    var before = g.turnScore;
+    g.turnScore = Math.round(g.turnScore * e.amount);
+    spendBadgeUse(b);
+    appendLog("你发动「" + b.cn + "」：" + before + " → " + g.turnScore + " 分。");
+  } else if (k === "extraDie") {
+    if (g.active.length >= 8) { setHint("骰子已经够多了"); return; }
+    var extra = rollOne(ORDINARY_DIE);
+    g.active.push(extra);
+    spendBadgeUse(b);
+    appendLog("你发动「" + b.cn + "」：多掷 1 颗（现 " + g.active.length + " 颗）。");
+    if (pScore(faceSymbols(g.active)) === 0) { bust("player"); return; }
+  } else if (k === "rerollAfterBust") {
+    setHint("爆点后才会弹出这颗徽章"); return;
+  } else if (k === "rerollAny" || k === "rerollSame" || k === "setDie" || k === "wildTo") {
+    g.badgeMode = { def: b }; g.badgeSel = []; g.valuePicker = null;
+    setHint("进入徽章选目标模式");
+  } else {
+    setHint("这颗徽章是被动效果，已在开局/计分时生效");
+  }
+  renderGame();
+}
+
+function confirmBadge() {
+  var g = S.game, m = g.badgeMode;
+  if (!m) return;
+  var b = m.def, k = b.effect.kind, amount = b.effect.amount;
+  var sel = g.badgeSel.slice().sort(function (a, b2) { return a - b2; });
+  if (!sel.length) { setHint("先选骰子"); return; }
+  if (k === "rerollAny" || k === "rerollSame") {
+    sel.forEach(function (i) { g.active[i] = rollOne(g.active[i].die); });
+    finishBadgeUse("重掷了 " + sel.length + " 颗骰");
+  } else if (k === "setDie") {
+    if (sel.length !== 1) { setHint("只选一颗"); return; }
+    var keep = g.active[sel[0]].die;
+    g.active[sel[0]] = { v: amount, wild: false, die: keep };
+    finishBadgeUse("把 1 颗骰改成了 " + amount + " 点");
+  } else if (k === "wildTo") {
+    if (sel.length !== 1 || !g.active[sel[0]].wild) { setHint("选一颗百搭骰"); return; }
+    g.valuePicker = { index: sel[0] };
+    g.badgeSel = [];
+    renderGame();
+  }
+}
+
+function applyWildTo(val) {
+  var g = S.game;
+  if (!g.valuePicker) return;
+  var keep = g.active[g.valuePicker.index].die;
+  g.active[g.valuePicker.index] = { v: val, wild: false, die: keep };
+  g.valuePicker = null;
+  finishBadgeUse("把百搭面改成了 " + val + " 点");
+}
+
+function finishBadgeUse(msg) {
+  var g = S.game, b = g.badgeMode ? g.badgeMode.def : g.badge.def;
+  spendBadgeUse(b);
+  g.badgeMode = null;
+  g.badgeSel = [];
+  appendLog("你发动「" + b.cn + "」：" + msg + "。");
+  renderGame();
+  if (pScore(faceSymbols(g.active)) === 0) { bust("player"); return; }
+  setHint("本回合累计 " + g.turnScore + " 分，继续点选或收分");
+}
+
+function setHint(t) { $("hint").textContent = t; }
+function appendLog(html) {
+  var el = document.createElement("div");
+  el.innerHTML = html;
+  $("log").insertBefore(el, $("log").firstChild);
+}
+
+function lockSelected(score) {
+  var g = S.game;
+  var keep = [], rest = [];
+  g.active.forEach(function (item, i) {
+    if (selection[i]) keep.push(item); else rest.push(item);
+  });
+  g.turnScore += score;
+  g.locked = g.locked.concat(keep);
+  g.active = rest;
+}
+
+function playerRoll() {
+  var g = S.game;
+  if (!g || g.busy || g.over || g.actor !== "player" || g.mustUseBadge) return;
+  if (g.badgeMode || g.valuePicker) { setHint("先把徽章用完或取消"); return; }
+  var sel = activeSelection();
+  if (!sel.length) { setHint("先点选要锁定的得分骰"); return; }
+  var sc = pScore(faceSymbols(sel));
+  if (sc <= 0) { setHint("这组骰子不计分，换一组"); return; }
+  lockSelected(sc);
+  selection = {};
+  if (g.active.length === 0) {
+    g.locked = [];
+    g.active = g.dice.map(function (d) { return rollOne(d); });
+    appendLog("你收下 " + sc + " 分，六颗骰全收——<b>重新起手</b>。");
+  } else {
+    g.active = g.active.map(function (x) { return rollOne(x.die); });
+    appendLog("你收下 " + sc + " 分，重掷 " + g.active.length + " 颗。");
+  }
+  if (pScore(faceSymbols(g.active)) === 0) { bust("player"); return; }
+  renderGame();
+  setHint("本回合累计 " + g.turnScore + " 分，继续点选或收分");
+}
+
+function playerBank() {
+  var g = S.game;
+  if (!g || g.busy || g.over || g.actor !== "player" || g.mustUseBadge) return;
+  var sel = activeSelection();
+  var sc = pScore(faceSymbols(sel));
+  if (sc <= 0) { setHint("先点选要收下的得分骰"); return; }
+  g.turnScore += sc;
+  selection = {};
+  if (g.multiplier !== 1) {
+    var before = g.turnScore;
+    g.turnScore = Math.round(g.turnScore * g.multiplier);
+    appendLog("军阀徽章：" + before + " → " + g.turnScore + " 分。");
+    g.multiplier = 1;
+  }
+  bankNow("player", g.turnScore);
+}
+
+function bankNow(who, score) {
+  var g = S.game;
+  g[who] += score;
+  appendLog((who === "player" ? "<b>你</b>" : "<b>" + g.pl.name + "</b>") + " 收下 " + score + " 分（总分 " + g[who] + "）。");
+  renderGame();
+  if (g[who] >= g.target) { finish(who); return; }
+  endTurn(who === "player" ? "ai" : "player");
+}
+
+function bust(who) {
+  var g = S.game;
+  if (who === "player" && g.badge && g.badge.def.effect.kind === "rerollAfterBust" && g.badge.uses > 0 && !g.mustUseBadge) {
+    g.mustUseBadge = true;
+    g.badgeMode = null; g.badgeSel = [];
+    appendLog("你掷出爆点，但「" + g.badge.def.cn + "」还能救一次。");
+    renderGame();
+    setHint("爆点！用重掷徽章再掷一次，或认了丢掉本回合 " + g.turnScore + " 分");
+    return;
+  }
+  appendLog((who === "player" ? "<b>你</b>" : "<b>" + g.pl.name + "</b>") + " 掷出爆点，本回合 " + g.turnScore + " 分全部清空。");
+  g.turnScore = 0;
+  g.locked = [];
+  g.multiplier = 1;
+  selection = {};
+  renderGame();
+  endTurn(who === "player" ? "ai" : "player");
+}
+
+function useRescue() {
+  var g = S.game;
+  if (!g || !g.mustUseBadge) return;
+  g.mustUseBadge = false;
+  spendBadgeUse(g.badge.def);
+  g.active = g.dice.map(function (d) { return rollOne(d); });
+  selection = {};
+  appendLog("你用掉一次「" + g.badge.def.cn + "」，重新掷 6 颗。");
+  renderGame();
+  if (pScore(faceSymbols(g.active)) === 0) { bust("player"); return; }
+  setHint("救回来了，继续点选或收分");
+}
+
+function concedeBust() {
+  var g = S.game;
+  if (!g || !g.mustUseBadge) return;
+  g.mustUseBadge = false;
+  appendLog("你认了，本回合 " + g.turnScore + " 分全丢。");
+  g.turnScore = 0;
+  g.locked = [];
+  g.multiplier = 1;
+  selection = {};
+  renderGame();
+  endTurn("ai");
+}
+
+function endTurn(next) {
+  var g = S.game;
+  if (g.over) return;
+  if (next === "player") g.round++;
+  g.busy = true;
+  renderGame();
+  setHint(next === "player" ? "你的回合" : "轮到对手…");
+  setTimeout(function () { beginTurn(next); }, 620);
+}
+
+function aiStep() {
+  var g = S.game;
+  if (!g || g.over) return;
+  var cfg = g.pl.ai || { threshold: 400, mistake: 0.3 };
+  if (g.active.length === 0) { beginTurn("ai"); return; }
+  var pick = aiChooseWithMistake(g.active, cfg.mistake);
+  if (!pick) { bust("ai"); return; }
+  g.turnScore += pick.score;
+  var keep = [], rest = [];
+  g.active.forEach(function (item, i) { (pick.indices.indexOf(i) >= 0 ? keep : rest).push(item); });
+  g.locked = g.locked.concat(keep);
+  g.active = rest;
+  appendLog("<b>" + g.pl.name + "</b> 收下 " + pick.score + " 分。");
+  renderGame();
+  if (g.active.length === 0) {
+    g.locked = [];
+    g.active = g.aiDice.map(function (d) { return rollOne(d); });
+  } else {
+    g.active = g.active.map(function (x) { return rollOne(x.die); });
+  }
+  if (scoreOf(faceSymbols(g.active)) === 0) { bust("ai"); return; }
+  if (shouldBank(g.turnScore, g.active.length, g.target, g.ai, cfg.threshold)) {
+    bankNow("ai", g.turnScore);
+  } else {
+    setTimeout(aiStep, 700);
+  }
+}
+
+function finish(winner) {
+  var g = S.game;
+  g.over = true;
+  var bet = g.level.bet;
+  if (!INFINITE_GOLD) {
+    if (winner === "player") wallet += bet; else wallet -= bet;
+    if (wallet < 0) wallet = 0;
+    saveWallet();
+  }
+  renderGame();
+  $("resTitle").textContent = winner === "player" ? "你赢了" : "你输了";
+  $("resBody").innerHTML = "最终比分：你 <b>" + g.player + "</b> : <b>" + g.ai + "</b> " + g.pl.name + "。<br>" +
+    (winner === "player" ? "按底注该赢 " : "按底注该输 ") + "<b>" + bet + "</b> 格罗申" +
+    (INFINITE_GOLD ? "（调试期金币无限，不结算）。" : "，钱包现有 <b>" + wallet + "</b>。");
+  $("overlay").classList.remove("hidden");
+}
+
+/* ---------------- 入口与事件 ---------------- */
+function boot() {
+  $("wallet").textContent = INFINITE_GOLD ? "∞" : String(wallet);
+  $("statDice").textContent = String(DICE.length);
+  var scoreRange = LEVELS.map(function (l) { return targetScore(l); });
+  $("targetInHero").textContent = Math.min.apply(null, scoreRange) + "–" + Math.max.apply(null, scoreRange);
+  $("hudTarget").textContent = String(LEVELS.length ? targetScore(LEVELS[0]) : TARGET_SCORE);
+  if ($("statPlayers")) $("statPlayers").textContent = String(PLAYERS.length);
+  updateLuck();
+
+  renderPlayers();
+  renderCrumbs("npc");
+
+  if ($("btnBeer")) $("btnBeer").addEventListener("click", drink);
+
+  $("btnRules1").addEventListener("click", function () { $("rulesModal").classList.remove("hidden"); });
+  $("btnRules3").addEventListener("click", function () { $("rulesModal").classList.remove("hidden"); });
+  $("btnCloseRules").addEventListener("click", function () { $("rulesModal").classList.add("hidden"); });
+
+  var backs = document.querySelectorAll("[data-back]");
+  for (var i = 0; i < backs.length; i++) {
+    backs[i].addEventListener("click", function (e) {
+      var target = e.currentTarget.getAttribute("data-back");
+      if (target === "npc") { go("npc"); return; }
+      if (target === "mode") { renderMode(); go("mode"); return; }
+      if (target === "badge") { renderBadge(); go("badge"); return; }
+    });
+  }
+
+  $("btnModeNext").addEventListener("click", function () {
+    if (!S.mode) return;
+    renderBadge();
+    go("badge");
+  });
+  $("btnBadgeNext").addEventListener("click", function () {
+    renderDice();
+    go("dice");
+  });
+  $("btnClearDice").addEventListener("click", function () { S.loadout = []; renderDice(); });
+  $("btnRecommend").addEventListener("click", recommendDice);
+  $("btnStart").addEventListener("click", startGame);
+
+  $("btnRoll").addEventListener("click", playerRoll);
+  $("btnBank").addEventListener("click", playerBank);
+  $("btnQuit").addEventListener("click", function () {
+    if (S.game) S.game.over = true;
+    $("overlay").classList.add("hidden");
+    go("npc");
+  });
+  $("btnHome").addEventListener("click", function () { $("overlay").classList.add("hidden"); go("npc"); });
+  $("btnAgain").addEventListener("click", function () {
+    $("overlay").classList.add("hidden");
+    if (S.level) startGame();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.code === "Space") { e.preventDefault(); playerRoll(); }
+    else if (e.code === "Enter") { e.preventDefault(); playerBank(); }
+  });
+
+  var api = {
+    S: S, go: go, startGame: startGame, renderPlayers: renderPlayers, renderNpc: renderPlayers,
+    renderMode: renderMode, renderBadge: renderBadge, renderDice: renderDice,
+    pickPlayer: pickPlayer, pickLevel: pickLevel,
+    scoreOf: scoreOf, aiChoose: aiChoose, rollDie: rollDie, playerRoll: playerRoll,
+    playerBank: playerBank, DICE: DICE, LEVELS: LEVELS, BADGES: BADGES, PLAYERS: PLAYERS,
+    wallet: function () { return wallet; }, infiniteGold: INFINITE_GOLD,
+    pScore: pScore, onDieClick: onDieClick, confirmBadge: confirmBadge, applyWildTo: applyWildTo,
+    useRescue: useRescue, concedeBust: concedeBust, useBadge: useBadge,
+    drink: drink, drunk: function () { return drunk; },
+    luckyChance: luckyChance, luckLabel: luckLabel, diceSummary: diceSummary,
+    setLucky: function (v) { luckyForce = (v === null || v === undefined) ? null : !!v; },
+    luckyRoll: luckyRoll, targetScore: targetScore,
+    setRng: function (fn) { rngOverride = (typeof fn === 'function') ? fn : null; },
+    countDie: function (id) { return countDie(S.loadout, id); },
+    toggleDice: toggleDice, setDiceHint: setDiceHint
+  };
+  window.__M2 = api;
+  window.__M1 = api;
+
+  var q = new URLSearchParams(location.search);
+  if (q.get("auto") === "1") autoDemo(q);
+}
+
+function autoDemo(q) {
+  var key = q.get("player") || "martin";
+  var pl = null;
+  for (var i = 0; i < PLAYERS.length; i++) if (PLAYERS[i].key === key) { pl = PLAYERS[i]; break; }
+  if (!pl) pl = PLAYERS[0];
+  pickPlayer(pl);
+  var modeBtn = document.querySelector("[data-mode='plain']");
+  if (modeBtn) modeBtn.click();
+  $("btnModeNext").click();
+  $("btnBadgeNext").click();
+  recommendDice();
+  startGame();
+  var timer = setInterval(function () {
+    var g = S.game;
+    if (!g || g.over) { clearInterval(timer); return; }
+    if (g.actor !== "player" || g.busy || g.mustUseBadge || g.badgeMode || g.valuePicker) return;
+    var pick = aiChoose(g.active);
+    if (!pick) { playerRoll(); return; }
+    for (var i = 0; i < g.active.length; i++) selection[i] = pick.indices.indexOf(i) >= 0;
+    renderGame();
+    if (shouldBank(g.turnScore + pick.score, g.active.length - pick.indices.length, g.target, g.player, 600)) playerBank();
+    else playerRoll();
+  }, 260);
+}
+
+boot();
+</script>
+</body>
+</html>
